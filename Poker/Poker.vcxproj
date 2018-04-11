@@ -181,6 +181,7 @@
     <ClCompile Include="Math\Vector4.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="Poker.cpp" />
+    <ClCompile Include="RenderSystem.cpp" />
     <ClCompile Include="ResourceManager.cpp" />
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="SceneNode.cpp" />
@@ -192,7 +193,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Texture.cpp" />
-    <ClCompile Include="源RenderSystem.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Poker.rc" />
