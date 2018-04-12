@@ -12,7 +12,10 @@
 
 class RenderSystemD3D11
 {
+	friend class Scene;
 public:
+
+protected:
 	RenderSystemD3D11();
 	~RenderSystemD3D11();
 
