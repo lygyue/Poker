@@ -8,6 +8,8 @@
  */
 
 #include "Mesh.h"
+#include "Scene.h"
+#include "RenderSystem.h"
 
 Mesh::Mesh(std::string Name)
 {
@@ -39,7 +41,9 @@ void Mesh::SetMaterial(Material* Mat)
 
 bool Mesh::Initialise(void* VertexBuffer, int VertexElementSize, int VertexCount, void* IndexBuffer, int IndexCount)
 {
-	VertexBuffer = new DataBuffer(Device, D3D11_BIND_VERTEX_BUFFER, &t->Vertices[0], t->numVertices * sizeof(Vector3));
-	IndexBuffer = new DataBuffer(Device, D3D11_BIND_INDEX_BUFFER, &t->Indices[0], t->numIndices * sizeof(short));
+	ID3D11Device* Device = Scene::GetCurrentScene()->GetRenderSystem()->GetD3d11Device();
+	int IndexBufferLength = IndexCount > 0xFFFF ? IndexCount * sizeof(int) : IndexCount * sizeof(short);
+	VertexBuffer = new DataBuffer(Device, D3D11_BIND_VERTEX_BUFFER, VertexBuffer, VertexCount * VertexElementSize);
+	IndexBuffer = new DataBuffer(Device, D3D11_BIND_INDEX_BUFFER, IndexBuffer, IndexBufferLength);
 	return true;
 }

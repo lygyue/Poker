@@ -7,6 +7,7 @@
  * 
  */
 #pragma once
+#include "Math/Vector3.h"
 #include "Common.h"
 #include "Material.h"
 #include <map>
@@ -36,6 +37,9 @@ class MeshManager
 	friend class Scene;
 public:
 	Mesh* CreateMesh(std::string Name, void* VertexBuffer, int VertexElementSize, int VertexCount, void* IndexBuffer, int IndexCount);
+	Mesh* CreateQuad(std::string Name, Vector3* Vertex);
+	Mesh* CreateLine(std::string Name, Vector3* Vertex);
+	Mesh* CreateSphere(std::string Name, int Col, int Row, float Radius);
 
 	bool DestroyMesh(Mesh*);
 	bool DestroyMesh(std::string Name);

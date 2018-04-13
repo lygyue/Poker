@@ -9,6 +9,9 @@
 #pragma once
 #include "Common.h"
 
+
+class RenderSystemD3D11;
+
 class Scene
 {
 public:
@@ -17,6 +20,8 @@ public:
 
 	static Scene* GetCurrentScene();
 	static void SetCurrentScene(Scene* S);
+public:
+	RenderSystemD3D11* GetRenderSystem() const;
 
 public:
 	void OnKeyDown(unsigned char Key);
@@ -28,4 +33,11 @@ public:
 	void OnMouseMove(int x, int y, unsigned int wParam);
 	void OnLButtonDbclk(int x, int y, unsigned int wParam);
 	void OnRButtonDbclk(int x, int y, unsigned int wParam);
+
+protected:
+	static Scene* CurrentScene;
+
+private:
+	RenderSystemD3D11* mRS;
+
 };

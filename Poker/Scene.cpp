@@ -7,10 +7,12 @@
  * 
  */
 #include "Scene.h"
+#include "RenderSystem.h"
 
+Scene* Scene::CurrentScene = nullptr;
 Scene::Scene()
 {
-
+	mRS = nullptr;
 }
 
 Scene::~Scene()
@@ -20,13 +22,19 @@ Scene::~Scene()
 
 Scene* Scene::GetCurrentScene()
 {
-	return nullptr;
+	return CurrentScene;
 }
 
 void Scene::SetCurrentScene(Scene* S)
 {
-
+	CurrentScene = S;
 }
+
+RenderSystemD3D11* Scene::GetRenderSystem() const
+{
+	return mRS;
+}
+
 
 void Scene::OnKeyDown(unsigned char Key)
 {
