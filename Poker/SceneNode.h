@@ -13,11 +13,14 @@
 #include "Math/Quaternion.h"
 #include "Math/Matrix4.h"
 #include "Mesh.h"
+#include "RenderGroupManager.h"
 #include <vector>
+
 
 class SceneNode
 {
 	friend class Scene;
+	friend class RenderGroupManager;
 public:
 	std::string GetName() const;
 	Vector3 GetPosition() const;
@@ -32,10 +35,7 @@ public:
 	void SetRotation(const Quaternion& Rot);
 	void SetScale(const Vector3& Scale);
 
-	SceneNode* CreateChild(std::string Name, Vector3 Pos, Quaternion Rot, Vector3 Scale);
-	bool RemoveChild(SceneNode* SN);
-	bool RemoveChild(std::string Name);
-	void RemoveAllChild();
+	SceneNode* CreateChild(std::string Name, Vector3 Pos, Quaternion Rot, Vector3 Scale, RenderGroup RG = RenderGroup_Normal);
 
 	bool RemoveAndDestroyChild(std::string Name);
 	bool RemoveAndDestroyChild(SceneNode* SN);
@@ -58,6 +58,8 @@ protected:
 	~SceneNode();
 
 	void _NotifyModify(SceneNode* Parent);
+	
+	RenderGroup GetRenderGroup() const;
 private:
 	SceneNode* mParentNode;
 	std::string mName;
@@ -69,6 +71,8 @@ private:
 	Vector3 mWorldPosition;
 	Quaternion mWorldRotation;
 	Vector3 mWorldScale;
+
+	RenderGroup mRenderGroup;
 
 	std::vector<SceneNode*> mChildArray;
 	std::vector<Mesh*> mAttachMeshArray;

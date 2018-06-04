@@ -8,8 +8,17 @@
  */
 #pragma once
 
+#define WINDOW_WIDTH		1600
+#define WINDOW_HEIGHT		1080
 // Four pokers
 #define POKER_COUNT			4
+#define POKER_PIXEL_WIDTH	105
+#define POKER_PIXEL_HEIGHT	150
+#define POKER_SHOW_PIXEL	20
+
+#define POKER_WIDTH			float(POKER_PIXEL_WIDTH) / float(WINDOW_WIDTH)
+#define POKER_HEIGHT		POKER_WIDTH * float(POKER_PIXEL_HEIGHT) / float(POKER_PIXEL_WIDTH)
+#define POKER_DEPTH			0.001
 // 类型，带单个牌的大小关系，从小到大。
 enum PokerType
 {
@@ -38,5 +47,6 @@ enum PokerClassify
 	CLub,
 	Heart,
 	Spade,
-	Primary,			// Joker must in this group
+	Primary,			// Joker must in this group, others not.
+	PC_Max,
 };

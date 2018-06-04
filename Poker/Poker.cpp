@@ -3,7 +3,8 @@
 
 #include "stdafx.h"
 #include "Poker.h"
-#include "Scene.h"
+#include "PokerDef.h"
+#include "PokerLogicManager.h"
 
 #define MAX_LOADSTRING 100
 
@@ -11,6 +12,7 @@
 HINSTANCE hInst;                                // 当前实例
 WCHAR szTitle[MAX_LOADSTRING];                  // 标题栏文本
 WCHAR szWindowClass[MAX_LOADSTRING];            // 主窗口类名
+PokerLogicManager* PLM = nullptr;
 
 // 此代码模块中包含的函数的前向声明: 
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -42,7 +44,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_POKER));
 
     MSG msg;
-
+	PLM = new PokerLogicManager;
     // 主消息循环: 
     while (GetMessage(&msg, nullptr, 0, 0))
     {
@@ -53,6 +55,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         }
     }
 
+	SAFE_DELETE(PLM);
     return (int) msg.wParam;
 }
 
@@ -99,7 +102,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    hInst = hInstance; // 将实例句柄存储在全局变量中
 
    HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
-      CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
+      CW_USEDEFAULT, 0, WINDOW_WIDTH, WINDOW_HEIGHT, nullptr, nullptr, hInstance, nullptr);
 
    if (!hWnd)
    {
@@ -158,31 +161,31 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		//OnMouseWheel(wParam, lParam);
 		break;
 	case WM_MOUSEMOVE:
-		Scene::GetCurrentScene()->OnMouseMove(LOWORD(lParam), HIWORD(lParam), wParam);
+		PLM->OnMouseMove(LOWORD(lParam), HIWORD(lParam), wParam);
 		break;
 	case WM_LBUTTONDBLCLK:
-		Scene::GetCurrentScene()->OnLButtonDbclk(LOWORD(lParam), HIWORD(lParam), wParam);
+		PLM->OnLButtonDbclk(LOWORD(lParam), HIWORD(lParam), wParam);
 		break;
 	case WM_LBUTTONDOWN:
-		Scene::GetCurrentScene()->OnLButtonDown(LOWORD(lParam), HIWORD(lParam), wParam);
+		PLM->OnLButtonDown(LOWORD(lParam), HIWORD(lParam), wParam);
 		break;
 	case WM_LBUTTONUP:
-		Scene::GetCurrentScene()->OnLButtonUp(LOWORD(lParam), HIWORD(lParam), wParam);
+		PLM->OnLButtonUp(LOWORD(lParam), HIWORD(lParam), wParam);
 		break;
 	case WM_RBUTTONDOWN:
-		Scene::GetCurrentScene()->OnRButtonDown(LOWORD(lParam), HIWORD(lParam), wParam);
+		PLM->OnRButtonDown(LOWORD(lParam), HIWORD(lParam), wParam);
 		break;
 	case WM_RBUTTONUP:
-		Scene::GetCurrentScene()->OnRButtonUp(LOWORD(lParam), HIWORD(lParam), wParam);
+		PLM->OnRButtonUp(LOWORD(lParam), HIWORD(lParam), wParam);
 		break;
 	case WM_RBUTTONDBLCLK:
-		Scene::GetCurrentScene()->OnRButtonDbclk(LOWORD(lParam), HIWORD(lParam), wParam);
+		PLM->OnRButtonDbclk(LOWORD(lParam), HIWORD(lParam), wParam);
 		break;
 	case WM_KEYDOWN:
-		Scene::GetCurrentScene()->OnKeyDown(wParam);
+		PLM->OnKeyDown(wParam);
 		break;
 	case WM_KEYUP:
-		Scene::GetCurrentScene()->OnKeyUp(wParam);
+		PLM->OnKeyUp(wParam);
 		break;
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);

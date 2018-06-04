@@ -17,7 +17,7 @@ D3d11Texture::D3d11Texture()
 	mDepthBuffer = NULL;
 }
 
-bool D3d11Texture::Initialise(ID3D11Device* Device, int Width, int Height, DXGI_FORMAT Format, int MipLevel, bool IsRenderTarget)
+bool D3d11Texture::Initialise(std::string Name, ID3D11Device* Device, int Width, int Height, DXGI_FORMAT Format, int MipLevel, bool IsRenderTarget)
 {
 	HRESULT err;
 	D3D11_TEXTURE2D_DESC td;
@@ -85,6 +85,7 @@ bool D3d11Texture::Initialise(ID3D11Device* Device, int Width, int Height, DXGI_
 
 	mTexture = texVal;
 	mRenderTargetView = view;
+	mName = Name;
 	return true;
 }
 
@@ -96,32 +97,56 @@ D3d11Texture::~D3d11Texture()
 	SAFE_DELETE(mDepthBuffer);
 }
 
-D3d11Texture* D3d11Texture::CreateRenderTarget(ID3D11Device* Device, int Width, int Height, DXGI_FORMAT format)
+TextureManager::TextureManager()
 {
+
+}
+
+TextureManager::~TextureManager()
+{
+
+}
+
+D3d11Texture* TextureManager::CreateRenderTarget(std::string Name, ID3D11Device* Device, int Width, int Height, DXGI_FORMAT format)
+{
+	if (mTextureArray.find(Name) != mTextureArray.end())
+	{
+		return mTextureArray[Name];
+	}
 	D3d11Texture* target = new D3d11Texture();
-	if (target->Initialise(Device, Width, Height, format, 1, true) == false)
+	if (target->Initialise(Name, Device, Width, Height, format, 1, true) == false)
 	{
 		SAFE_DELETE(target);
 		return NULL;
 	}
+	mTextureArray[Name] = target;
 	//
 	return target;
 }
 
-D3d11Texture* D3d11Texture::CreateTexture(ID3D11Device* Device, int Width, int Height, DXGI_FORMAT format /* = DXGI_FORMAT_B8G8R8A8_UNORM */, int MipLevel /* = 1 */)
+D3d11Texture* TextureManager::CreateTexture(std::string Name, ID3D11Device* Device, int Width, int Height, DXGI_FORMAT format /* = DXGI_FORMAT_B8G8R8A8_UNORM */, int MipLevel /* = 1 */)
 {
+	if (mTextureArray.find(Name) != mTextureArray.end())
+	{
+		return mTextureArray[Name];
+	}
 	D3d11Texture* texture = new D3d11Texture();
-	if (texture->Initialise(Device, Width, Height, format, MipLevel, false) == false)
+	if (texture->Initialise(Name, Device, Width, Height, format, MipLevel, false) == false)
 	{
 		SAFE_DELETE(texture);
 		return NULL;
 	}
+	mTextureArray[Name] = texture;
 	//
 	return texture;
 }
 
-D3d11Texture* D3d11Texture::LoadTextureFromFile(ID3D11Device* Device, const char* FullFileName, bool IsDDS)
+D3d11Texture* TextureManager::LoadTextureFromFile(std::string Name, ID3D11Device* Device, const char* FullFileName, bool IsDDS)
 {
+	if (mTextureArray.find(Name) != mTextureArray.end())
+	{
+		return mTextureArray[Name];
+	}
 	FILE* fp = NULL;
 	fopen_s(&fp, FullFileName, "rb");
 	if (fp == NULL)
@@ -134,13 +159,17 @@ D3d11Texture* D3d11Texture::LoadTextureFromFile(ID3D11Device* Device, const char
 	unsigned char* FileBuffer = new unsigned char[FileLength];
 	fread(FileBuffer, FileLength, 1, fp);
 	fclose(fp);
-	D3d11Texture* Texture = D3d11Texture::LoadTextureFromMemory(Device, FileBuffer, FileLength, IsDDS);
+	D3d11Texture* Texture = LoadTextureFromMemory(Name, Device, FileBuffer, FileLength, IsDDS);
 	SAFE_DELETE(FileBuffer);
 	return Texture;
 }
 
-D3d11Texture* D3d11Texture::LoadTextureFromMemory(ID3D11Device* Device, unsigned char* FileData, int FileLength, bool IsDDS)
+D3d11Texture* TextureManager::LoadTextureFromMemory(std::string Name, ID3D11Device* Device, unsigned char* FileData, int FileLength, bool IsDDS)
 {
+	if (mTextureArray.find(Name) != mTextureArray.end())
+	{
+		return mTextureArray[Name];
+	}
 	ID3D11Resource* resource = NULL;
 	ID3D11ShaderResourceView* srv = NULL;
 	HRESULT hr = S_OK;
@@ -160,10 +189,6 @@ D3d11Texture* D3d11Texture::LoadTextureFromMemory(ID3D11Device* Device, unsigned
 	resource->QueryInterface(__uuidof(ID3D11Texture2D), (void**)(&Texture->mTexture));
 	Texture->mShaderResourceView = srv;
 	SAFE_RELEASE(resource);
+	mTextureArray[Name] = Texture;
 	return Texture;
-}
-
-void D3d11Texture::Release()
-{
-	delete this;
 }

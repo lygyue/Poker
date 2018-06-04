@@ -15,18 +15,14 @@
 
 class ResourceManager
 {
+	friend class Scene;
 public:
-	static ResourceManager* GetInstance();
-	static void ReleaseInstance();
-
 	std::string GetPokerFullPath(PokerType PT, PokerClassify PC);
 protected:
 	ResourceManager();
 	~ResourceManager();
 
 	void InitialiseJokerResource();
-
-	static ResourceManager* Instance;
 private:
 	char mAppPath[MAX_PATH];
 	std::string mPokerResource[Primary][Poker_Black_Joker];

@@ -97,11 +97,12 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>E:\Workdir\Poker\DirectXTK-master\Inc</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -146,6 +147,8 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Card.h" />
+    <ClInclude Include="CardDealer.h" />
     <ClInclude Include="Common.h" />
     <ClInclude Include="DataBuffer.h" />
     <ClInclude Include="Material.h" />
@@ -157,11 +160,15 @@
     <ClInclude Include="Math\Vector3.h" />
     <ClInclude Include="Math\Vector4.h" />
     <ClInclude Include="Mesh.h" />
+    <ClInclude Include="Player.h" />
     <ClInclude Include="Poker.h" />
     <ClInclude Include="PokerDef.h" />
+    <ClInclude Include="PokerLogicManager.h" />
+    <ClInclude Include="RenderGroupManager.h" />
     <ClInclude Include="RenderSystem.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="ResourceManager.h" />
+    <ClInclude Include="Robot.h" />
     <ClInclude Include="Scene.h" />
     <ClInclude Include="SceneNode.h" />
     <ClInclude Include="Shader.h" />
@@ -170,6 +177,8 @@
     <ClInclude Include="Texture.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Card.cpp" />
+    <ClCompile Include="CardDealer.cpp" />
     <ClCompile Include="DataBuffer.cpp" />
     <ClCompile Include="Material.cpp" />
     <ClCompile Include="Math\Matrix3.cpp" />
@@ -181,6 +190,8 @@
     <ClCompile Include="Math\Vector4.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="Poker.cpp" />
+    <ClCompile Include="PokerLogicManager.cpp" />
+    <ClCompile Include="RenderGroupManager.cpp" />
     <ClCompile Include="RenderSystem.cpp" />
     <ClCompile Include="ResourceManager.cpp" />
     <ClCompile Include="Scene.cpp" />

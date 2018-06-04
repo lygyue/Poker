@@ -22,7 +22,6 @@ RenderSystemD3D11::RenderSystemD3D11()
 	//mPrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_LINELIST;
 	mPrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
-	mMasterCol = XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f);
 	mBackColor = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
 }
 
@@ -119,4 +118,9 @@ ID3D11Device* RenderSystemD3D11::GetD3d11Device() const
 ID3D11DeviceContext* RenderSystemD3D11::GetD3d11Context() const
 {
 	return mDX11DeviceContext;
+}
+
+DataBuffer* RenderSystemD3D11::GetUniformBuffer() const
+{
+	return mUniformBufferGen;
 }

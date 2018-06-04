@@ -9,7 +9,8 @@
 
 #include "ResourceManager.h"
 
-ResourceManager* ResourceManager::Instance = nullptr;
+#define POKER_RELATIVE_PATH			"Resource\\Card\\"
+
 ResourceManager::ResourceManager()
 {
 	// Get Current Directory
@@ -37,23 +38,9 @@ ResourceManager::~ResourceManager()
 
 }
 
-ResourceManager* ResourceManager::GetInstance()
-{
-	if (Instance == nullptr)
-	{
-		Instance = new ResourceManager;
-	}
-	return Instance;
-}
-
-void ResourceManager::ReleaseInstance()
-{
-	SAFE_DELETE(Instance);
-}
-
 void ResourceManager::InitialiseJokerResource()
 {
-	std::string ChildFolder = "Resource\\Card\\";
+	std::string ChildFolder = POKER_RELATIVE_PATH;
 	char* szPoker[] = { "Diamond_", "CLub_", "Heart_", "Spade_" };
 	for (int i = 0; i < Primary; i++)
 	{

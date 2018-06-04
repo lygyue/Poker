@@ -7,6 +7,7 @@
  * 
  */
 #include "SceneNode.h"
+#include "Scene.h"
 
 SceneNode::SceneNode(std::string Name)
 	: mName(Name)
@@ -24,7 +25,7 @@ SceneNode::SceneNode(std::string Name)
 
 SceneNode::~SceneNode()
 {
-
+	DestroyAllChild();
 }
 
 std::string SceneNode::GetName() const
@@ -89,46 +90,17 @@ void SceneNode::SetScale(const Vector3& Scale)
 	}
 }
 
-SceneNode* SceneNode::CreateChild(std::string Name, Vector3 Pos, Quaternion Rot, Vector3 Scale)
+SceneNode* SceneNode::CreateChild(std::string Name, Vector3 Pos, Quaternion Rot, Vector3 Scale, RenderGroup RG/* = RenderGroup_Normal*/)
 {
 	SceneNode* Child = new SceneNode(Name);
 	Child->SetPosition(Pos);
 	Child->SetRotation(Rot);
 	Child->SetScale(Scale);
 	Child->_NotifyModify(this);
+	Child->mRenderGroup = RG;
 	mChildArray.push_back(Child);
+	Scene::GetCurrentScene()->GetRenderGroupManager()->AddSceneNode(Child);
 	return Child;
-}
-
-bool SceneNode::RemoveChild(std::string Name)
-{
-	for (int i = 0; i < mChildArray.size(); i++)
-	{
-		if (mChildArray[i]->GetName() == Name)
-		{
-			mChildArray.erase(mChildArray.begin() + i);
-			return true;
-		}
-	}
-	return false;
-}
-
-bool SceneNode::RemoveChild(SceneNode* SN)
-{
-	for (int i = 0; i < mChildArray.size(); i++)
-	{
-		if (mChildArray[i] == SN)
-		{
-			mChildArray.erase(mChildArray.begin() + i);
-			return true;
-		}
-	}
-	return false;
-}
-
-void SceneNode::RemoveAllChild()
-{
-	mChildArray.clear();
 }
 
 bool SceneNode::RemoveAndDestroyChild(SceneNode* SN)
@@ -138,6 +110,7 @@ bool SceneNode::RemoveAndDestroyChild(SceneNode* SN)
 		if (mChildArray[i] == SN)
 		{
 			SN->DestroyAllChild();
+			Scene::GetCurrentScene()->GetRenderGroupManager()->RemoveSceneNode(SN);
 			SAFE_DELETE(SN);
 			mChildArray.erase(mChildArray.begin() + i);
 			return true;
@@ -153,6 +126,7 @@ bool SceneNode::RemoveAndDestroyChild(std::string Name)
 		if (mChildArray[i]->GetName() == Name)
 		{
 			mChildArray[i]->DestroyAllChild();
+			Scene::GetCurrentScene()->GetRenderGroupManager()->RemoveSceneNode(mChildArray[i]);
 			SAFE_DELETE(mChildArray[i]);
 			mChildArray.erase(mChildArray.begin() + i);
 			return true;
@@ -166,6 +140,7 @@ void SceneNode::DestroyAllChild()
 	for (int i = 0; i < mChildArray.size(); i++)
 	{
 		mChildArray[i]->DestroyAllChild();
+		Scene::GetCurrentScene()->GetRenderGroupManager()->RemoveSceneNode(mChildArray[i]);
 		SAFE_DELETE(mChildArray[i]);
 	}
 	mChildArray.clear();
@@ -199,7 +174,7 @@ bool SceneNode::DetachMesh(Mesh* M)
 
 int SceneNode::GetAttachMeshCount() const
 {
-	return mAttachMeshArray.size();
+	return (int)mAttachMeshArray.size();
 }
 
 Mesh* SceneNode::GetAttachMeshByIndex(int Index) const 
@@ -221,7 +196,7 @@ Mesh* SceneNode::GetAttachMeshByName(std::string Name) const
 
 int SceneNode::GetChildCount() const
 {
-	return mChildArray.size();
+	return (int)mChildArray.size();
 }
 
 SceneNode* SceneNode::GetChildByIndex(int Index) const
@@ -265,4 +240,9 @@ void SceneNode::_NotifyModify(SceneNode* Parent)
 		mWorldRotation = mParentNode->GetWorldRotation() * mRotation;
 		mWorldPosition = mWorldRotation * mPosition + mParentNode->GetWorldPosition();
 	}
+}
+
+RenderGroup SceneNode::GetRenderGroup() const
+{
+	return mRenderGroup;
 }

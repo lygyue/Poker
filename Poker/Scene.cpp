@@ -7,17 +7,29 @@
  * 
  */
 #include "Scene.h"
-#include "RenderSystem.h"
 
 Scene* Scene::CurrentScene = nullptr;
 Scene::Scene()
 {
-	mRS = nullptr;
+	mRootSceneNode = new SceneNode("Root_Scene_Node");
+	mRenderSystem = new RenderSystemD3D11;
+	mRenderGroupManager = new RenderGroupManager;
+	mResourceManager = new ResourceManager;
+	mMaterialManager = new MaterialManager;
+	mMeshManager = new MeshManager;
+	mCamera = new Camera;
+	mCamera->SetProjectionParameters(DegreesToRadians(90), float(WINDOW_WIDTH) / float(WINDOW_HEIGHT), 0.01f, 100.0f);
 }
 
 Scene::~Scene()
 {
-
+	SAFE_DELETE(mRootSceneNode);
+	SAFE_DELETE(mRenderSystem);
+	SAFE_DELETE(mRenderGroupManager);
+	SAFE_DELETE(mResourceManager);
+	SAFE_DELETE(mMaterialManager);
+	SAFE_DELETE(mMeshManager);
+	SAFE_DELETE(mCamera);
 }
 
 Scene* Scene::GetCurrentScene()
@@ -32,51 +44,48 @@ void Scene::SetCurrentScene(Scene* S)
 
 RenderSystemD3D11* Scene::GetRenderSystem() const
 {
-	return mRS;
+	return mRenderSystem;
 }
 
-
-void Scene::OnKeyDown(unsigned char Key)
+RenderGroupManager* Scene::GetRenderGroupManager() const
 {
-
+	return mRenderGroupManager;
 }
 
-void Scene::OnKeyUp(unsigned char Key)
+ResourceManager* Scene::GetResourceManager() const
 {
-
+	return mResourceManager;
 }
 
-void Scene::OnLButtonDown(int x, int y, unsigned int wParam)
+MaterialManager* Scene::GetMaterialManager() const
 {
-
+	return mMaterialManager;
 }
 
-void Scene::OnLButtonUp(int x, int y, unsigned int wParam)
+MeshManager* Scene::GetMeshManager() const
 {
-
+	return mMeshManager;
 }
 
-void Scene::OnRButtonDown(int x, int y, unsigned int wParam)
+TextureManager* Scene::GetTextureManager() const
 {
-
+	return mTextureManager;
 }
 
-void Scene::OnRButtonUp(int x, int y, unsigned int wParam)
+Camera* Scene::GetCurrentCamera() const
 {
-
+	return mCamera;
 }
 
-void Scene::OnLButtonDbclk(int x, int y, unsigned int wParam)
+SceneNode* Scene::GetRootSceneNode() const
 {
-
+	return mRootSceneNode;
 }
 
-void Scene::OnRButtonDbclk(int x, int y, unsigned int wParam)
+void Scene::RenderOneFrame()
 {
-
-}
-
-void Scene::OnMouseMove(int x, int y, unsigned int wParam)
-{
-
+	mRenderSystem->SetAndClearRenderTarget();
+	mRenderSystem->SetViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+	mRenderGroupManager->RenderAllQueue();
+	mRenderSystem->Present();
 }
