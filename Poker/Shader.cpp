@@ -10,16 +10,16 @@
 #include "Scene.h"
 
 static char* DefaultStandardVertexShaderSrc =
-"float4x4 ProjView;"
+"float4x4 ProjViewWorld;"
 "void main(in  float4 Position  : POSITION,"
 "          out float4 oPosition : SV_Position)"
-"{   oPosition = mul(ProjView, Position);}";
+"{   oPosition = mul(ProjViewWorld, Position);}";
 
 static char* DefaultStandardSampleVertexShaderSrc =
-"float4x4 ProjView;"
+"float4x4 ProjViewWorld;"
 "void main(in  float4 Position  : POSITION,    in  float2 TexCoord : TEXCOORD0,"
 "          out float4 oPosition : SV_Position, out float2 oTexCoord : TEXCOORD0)"
-"{   oPosition = mul(ProjView, Position);"
+"{   oPosition = mul(ProjViewWorld, Position);"
 "	 oTexCoord = TexCoord;}";
 
 static char* DefaultPixelShaderSrcBlack =
@@ -48,12 +48,73 @@ static char* DefaultPixelShaderSrcBlue =
 "    return float4(0, 0, 1, 1); }";
 
 
-char* DefaultPixelShaderSrcSimpleSample =
+static char* DefaultPixelShaderSrcSimpleSample =
 "Texture2D Texture   : register(t0); SamplerState Linear : register(s0); "
 "float4 main(in float4 Position : SV_Position, in float2 TexCoord : TEXCOORD0) : SV_Target"
 "{   float4 TexCol = Texture.Sample(Linear, TexCoord); "
-"    if (TexCol.a==0) clip(-1); " // If alpha = 0, don't draw
+//"    if (TexCol.a==0) clip(-1); " // If alpha = 0, don't draw
 "    return TexCol;}";
+
+static char* DefaultPixelShaderSrcSimpleFade =
+"cbuffer SceneConstantBuffer : register(b0)"
+"{"
+"	float4x4 ProjViewWorld;"
+"	float Alpha;"
+"}"
+"Texture2D Texture   : register(t0); SamplerState Linear : register(s0); "
+"float4 main(in float4 Position : SV_Position, in float2 TexCoord : TEXCOORD0) : SV_Target"
+"{"
+"	float4 TexCol = Texture.Sample(Linear, TexCoord); "
+"	TexCol = TexCol * Alpha;"
+"	return TexCol;"
+"}";
+
+static char* DefaultPixelShaderSrcSimpleFadeInOut =
+"cbuffer SceneConstantBuffer : register(b0)"
+"{"
+"	float4x4 ProjViewWorld;"
+"	float Alpha;"
+"}"
+"Texture2D TextureOut   : register(t0); SamplerState Linear : register(s0); "
+"Texture2D TextureIn   : register(t1); "
+"float4 main(in float4 Position : SV_Position, in float2 TexCoord : TEXCOORD0) : SV_Target"
+"{"
+"	float4 TexColIn = TextureIn.Sample(Linear, TexCoord); "
+"	float4 TexColOut = TextureOut.Sample(Linear, TexCoord); "
+"	float4 TexCol = TexColIn * Alpha + TexColOut * (1 - Alpha);"
+"	return TexCol;"
+"}";
+
+static char* DefaultPixelShaderSrcSimpleN_B_N =
+"cbuffer SceneConstantBuffer : register(b0)"
+"{"
+"	float4x4 ProjViewWorld;"
+"	float Alpha;"
+"}"
+"Texture2D Texture   : register(t0); SamplerState Linear : register(s0); "
+"float4 main(in float4 Position : SV_Position, in float2 TexCoord : TEXCOORD0) : SV_Target"
+"{"
+"	float4 TexCol = Texture.Sample(Linear, TexCoord); "
+"	TexCol = saturate((1 - TexCol) * Alpha + TexCol);"
+"	return TexCol;"
+"}";
+
+static char* DefaultPixelShaderSrcSimpleL_R_L =
+"cbuffer SceneConstantBuffer : register(b0)"
+"{"
+"	float4x4 ProjViewWorld;"
+"	float Alpha;"
+"}"
+"Texture2D Texture   : register(t0); SamplerState Linear : register(s0); "
+"float4 main(in float4 Position : SV_Position, in float2 TexCoord : TEXCOORD0) : SV_Target"
+"{"
+"	float4 TexCol = Texture.Sample(Linear, TexCoord); "
+"	if(TexCoord.x < Alpha) TexCol.a = 0;"
+"	return TexCol;"
+"}";
+
+std::string StandardShaderName[CutomShader] = { "Simple_Black", "Simple_White", "Simple_Red", "Simple_Green", "Simple_Blue", "Simple_Texture_Sample" ,
+"Simple_Fade","Simple_Fade_In_Out", "Simple_N_B_N", "Simple_L_R_L" };
 
 Shader::Shader()
 {
@@ -137,10 +198,9 @@ bool Shader::Initialise(ID3D11Device* Device, std::string VSD, std::string PSD, 
 	return true;
 }
 
-std::string StandardShaderName[CutomShader] = { "Simple_Black", "Simple_White", "Simple_Red", "Simple_Green", "Simple_Blue", "Simple_Texture_Sample" };
 ShaderManager::ShaderManager()
 {
-	InitialiseStandardShaders();
+
 }
 
 ShaderManager::~ShaderManager()
@@ -166,6 +226,10 @@ void ShaderManager::InitialiseStandardShaders()
 
 	ShaderElementFlag |= Ele_TexCoord0;
 	CreateCustomShader(StandardShaderName[SimpleTextureSample], DefaultStandardSampleVertexShaderSrc, DefaultPixelShaderSrcSimpleSample, ShaderElementFlag);
+	CreateCustomShader(StandardShaderName[SimpleFade], DefaultStandardSampleVertexShaderSrc, DefaultPixelShaderSrcSimpleFade, ShaderElementFlag);
+	CreateCustomShader(StandardShaderName[SimpleFadeInOut], DefaultStandardSampleVertexShaderSrc, DefaultPixelShaderSrcSimpleFadeInOut, ShaderElementFlag);
+	CreateCustomShader(StandardShaderName[SimpleN_B_N], DefaultStandardSampleVertexShaderSrc, DefaultPixelShaderSrcSimpleN_B_N, ShaderElementFlag);
+	CreateCustomShader(StandardShaderName[SimpleL_R_L], DefaultStandardSampleVertexShaderSrc, DefaultPixelShaderSrcSimpleL_R_L, ShaderElementFlag);
 }
 
 Shader* ShaderManager::CreateCustomShader(std::string Name, std::string VSD, std::string PSD, unsigned int ShaderElementFlag)
@@ -175,7 +239,7 @@ Shader* ShaderManager::CreateCustomShader(std::string Name, std::string VSD, std
 		return mShaderArray[Name];
 	}
 	Shader* S = new Shader;
-	bool ret = S->Initialise(Scene::GetCurrentScene()->GetCurrentScene()->GetRenderSystem()->GetD3d11Device(), VSD, PSD, ShaderElementFlag);
+	bool ret = S->Initialise(Scene::GetCurrentScene()->GetRenderSystem()->GetD3d11Device(), VSD, PSD, ShaderElementFlag);
 
 	if (ret == false)
 	{
@@ -200,4 +264,15 @@ Shader* ShaderManager::GetShaderByType(BaseShader BS)
 {
 	std::string Name = StandardShaderName[BS];
 	return GetShaderByName(Name);
+}
+
+void ShaderManager::DestroyShader(std::string Name)
+{
+	if (mShaderArray.find(Name) != mShaderArray.end())
+	{
+		Shader* S = mShaderArray[Name];
+		SAFE_DELETE(S);
+		mShaderArray.erase(Name);
+	}
+	return;
 }

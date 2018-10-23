@@ -11,6 +11,8 @@
 #include "PokerLogicManager.h"
 #include "Math/Vector3.h"
 #include "Scene.h"
+#include "Timer.h"
+#include "EffectManager.h"
 
 PokerLogicManager::PokerLogicManager()
 {
@@ -18,8 +20,8 @@ PokerLogicManager::PokerLogicManager()
 	mCardDealer = new RamdomDealer;
 	Scene* S = new Scene;
 	Scene::SetCurrentScene(S);
-	BuildPokerName();
-	InitialiseAllResource();
+	Timer* T = new Timer;
+	Timer::ThisInstance = T;
 }
 
 PokerLogicManager::~PokerLogicManager()
@@ -29,6 +31,69 @@ PokerLogicManager::~PokerLogicManager()
 	Scene::SetCurrentScene(nullptr);
 	SAFE_DELETE(mCardManager);
 	SAFE_DELETE(mCardDealer);
+	SAFE_DELETE(Timer::ThisInstance);
+	Timer::ThisInstance = nullptr;
+}
+
+bool PokerLogicManager::Initialise(HWND hWnd)
+{
+	Scene* S = Scene::GetCurrentScene();
+	bool ret = S->Initialise(hWnd);
+	if (!ret)
+	{
+		return false;
+	}
+	BuildPokerName();
+	InitialiseAllResource();
+	return true;
+}
+
+void PokerLogicManager::StartNewGame()
+{
+	int ret = MessageBoxA(NULL, "Are you sure to start a new game?", "Poker", MB_YESNO);
+	if (ret == IDYES)
+	{
+
+	}
+}
+
+void PokerLogicManager::Update()
+{
+	Timer::ThisInstance->Update();
+	Scene::GetCurrentScene()->Update();
+
+	// Do a test
+	float Effect_Interval = 10.0f;
+	float EffectTimeLen = 6.0f;
+	static unsigned int CurrentIndex = 0;
+	static float CurrentInterval = 0.0f;
+	static Effect* CurrentEffect = nullptr;
+	CurrentInterval += float(Timer::GetInstance()->GetDelta()) * 0.001f;
+
+	if (CurrentInterval >= Effect_Interval)
+	{
+		CurrentInterval -= Effect_Interval;
+		EffectManager* EffectMgr = Scene::GetCurrentScene()->GetEffectManager();
+		if (CurrentEffect)
+		{
+			EffectMgr->DestroyEffect(CurrentEffect->GetName());
+			CurrentEffect = nullptr;
+		}	
+		SceneNode* BackGroundNode = Scene::GetCurrentScene()->GetBackGroundNode();
+		Mesh* M = BackGroundNode->GetAttachMeshByIndex(0);
+		float Acceleration = 0.5f;
+		std::string NewTexturePath;
+		if (CurrentIndex != Effect_Fade_Out)
+		{
+			NewTexturePath = Scene::GetCurrentScene()->GetResourceManager()->GetRandomBackGroundImagePath();
+		}
+		if (CurrentIndex == Effect_Norma_Brightness_Normal) Acceleration = 0.0f;
+		if (CurrentIndex == Effect_Left_Right_Left) Acceleration = 2.0f;
+		if (CurrentIndex == Effect_Rotate_Out_In) Acceleration = 4.0f;
+		CurrentEffect = EffectMgr->CreateEffect("TestTest", (Effect_Type)CurrentIndex, EffectTimeLen, false, false, Acceleration, M, BackGroundNode, NewTexturePath.c_str());
+		CurrentIndex++;
+		CurrentIndex %= Effect_Max;
+	}
 }
 
 void PokerLogicManager::BuildPokerName()
@@ -139,7 +204,15 @@ std::string PokerLogicManager::GetPokerName(PokerType PT, PokerClassify PC) cons
 
 void PokerLogicManager::OnKeyDown(unsigned char Key)
 {
-
+	Camera* Cam = Scene::GetCurrentScene()->GetCurrentCamera();
+	if (Key == 'A' || Key == 'a')
+	{
+		Cam->RollPitchYaw(0, -0.2, 0);
+	}
+	else if (Key == 'D' || Key == 'd')
+	{
+		Cam->RollPitchYaw(0, 0.2, 0);
+	}
 }
 
 void PokerLogicManager::OnKeyUp(unsigned char Key)

@@ -36,7 +36,7 @@ RenderSystemD3D11::~RenderSystemD3D11()
 	SAFE_RELEASE(mD3dDevice11);
 }
 
-bool RenderSystemD3D11::InitialiseD3d11(int Width, int Height, HWND Hwnd)
+bool RenderSystemD3D11::Initialise(int Width, int Height, HWND Hwnd)
 {
 	mWidth = Width;
 	mHeight = Height;
@@ -107,6 +107,7 @@ bool RenderSystemD3D11::InitialiseD3d11(int Width, int Height, HWND Hwnd)
 
 	mUniformBufferGen = new DataBuffer(mD3dDevice11, D3D11_BIND_CONSTANT_BUFFER, NULL, UNIFORM_DATA_SIZE);
 	mDX11DeviceContext->VSSetConstantBuffers(0, 1, &mUniformBufferGen->D3DBuffer);
+	mDX11DeviceContext->PSSetConstantBuffers(0, 1, &mUniformBufferGen->D3DBuffer);
 	return true;
 }
 

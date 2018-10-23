@@ -23,6 +23,10 @@ enum BaseShader
 	SimpleGreen,
 	SimpleBlue,
 	SimpleTextureSample,
+	SimpleFade,
+	SimpleFadeInOut,
+	SimpleN_B_N,			// normal - brightness - normal
+	SimpleL_R_L,			// left - right - left
 	CutomShader,
 };
 enum ShaderElement
@@ -68,6 +72,8 @@ public:
 	Shader* CreateCustomShader(std::string Name, std::string VSD, std::string PSD, unsigned int ShaderElementFlag);
 	Shader* GetShaderByName(std::string Name);
 	Shader* GetShaderByType(BaseShader BS);
+
+	void DestroyShader(std::string Name);
 protected:
 	ShaderManager();
 	~ShaderManager();

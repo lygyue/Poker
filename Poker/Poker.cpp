@@ -13,6 +13,8 @@ HINSTANCE hInst;                                // 当前实例
 WCHAR szTitle[MAX_LOADSTRING];                  // 标题栏文本
 WCHAR szWindowClass[MAX_LOADSTRING];            // 主窗口类名
 PokerLogicManager* PLM = nullptr;
+HWND g_WindowWnd = nullptr;
+BOOL g_Exit = FALSE;
 
 // 此代码模块中包含的函数的前向声明: 
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -45,14 +47,25 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     MSG msg;
 	PLM = new PokerLogicManager;
+	if (PLM->Initialise(g_WindowWnd) == false)
+	{
+		SAFE_DELETE(PLM);
+		return FALSE;
+	}
     // 主消息循环: 
-    while (GetMessage(&msg, nullptr, 0, 0))
+    while (!g_Exit)
     {
-        if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
-        {
-            TranslateMessage(&msg);
-            DispatchMessage(&msg);
-        }
+		//BOOL Ret = GetMessage(&msg, nullptr, 0, 0);
+		BOOL Ret = PeekMessage(&msg, nullptr, 0U, 0U, PM_REMOVE);
+		if (Ret)
+		{
+			if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
+			{
+				TranslateMessage(&msg);
+				DispatchMessage(&msg);
+			}
+		}
+		PLM->Update();
     }
 
 	SAFE_DELETE(PLM);
@@ -108,7 +121,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    {
       return FALSE;
    }
-
+   g_WindowWnd = hWnd;
    ShowWindow(hWnd, nCmdShow);
    UpdateWindow(hWnd);
 
@@ -141,6 +154,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             case IDM_EXIT:
                 DestroyWindow(hWnd);
                 break;
+			case ID_START_A_NEW_GAME:
+				PLM->StartNewGame();
+				break;
             default:
                 return DefWindowProc(hWnd, message, wParam, lParam);
             }
@@ -154,6 +170,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             EndPaint(hWnd, &ps);
         }
         break;
+	case WM_CLOSE:
+		g_Exit = TRUE;
+		break;
     case WM_DESTROY:
         PostQuitMessage(0);
         break;

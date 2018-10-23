@@ -21,6 +21,7 @@ SceneNode::SceneNode(std::string Name)
 	mWorldScale = Vector3(1, 1, 1);
 
 	mParentNode = nullptr;
+	mVisible = true;
 }
 
 SceneNode::~SceneNode()
@@ -172,6 +173,66 @@ bool SceneNode::DetachMesh(Mesh* M)
 	return false;
 }
 
+void SceneNode::SetVisible(bool Visible)
+{
+	mVisible = Visible;
+}
+
+bool SceneNode::GetVisible() const
+{
+	return mVisible;
+}
+
+void SceneNode::Scale(const Vector3& scale)
+{
+	mScale = scale;
+	_NotifyModify(mParentNode);
+}
+
+void SceneNode::Scale(float x, float y, float z)
+{
+	Scale(Vector3(x, y, z));
+}
+
+void SceneNode::Translate(float x, float y, float z)
+{
+	Translate(Vector3(x, y, z));	
+}
+
+void SceneNode::Translate(const Vector3& d)
+{
+	mPosition += d;
+	_NotifyModify(mParentNode);
+}
+
+void SceneNode::Rotate(const Quaternion& q)
+{
+	mRotation = mRotation * q;
+	_NotifyModify(mParentNode);
+}
+
+void SceneNode::Rotate(const Vector3& axis, const Radian& angle)
+{
+	Quaternion q;
+	q.FromAngleAxis(angle, axis);
+	Rotate(q);
+}
+
+void SceneNode::Roll(const Radian& angle)
+{
+	Rotate(Vector3::UNIT_Z, angle);
+}
+
+void SceneNode::Yaw(const Radian& angle)
+{
+	Rotate(Vector3::UNIT_Y, angle);
+}
+
+void SceneNode::Pitch(const Radian& angle)
+{
+	Rotate(Vector3::UNIT_X, angle);
+}
+
 int SceneNode::GetAttachMeshCount() const
 {
 	return (int)mAttachMeshArray.size();
@@ -220,8 +281,24 @@ Matrix4 SceneNode::GetWorldTransform() const
 {
 	Matrix4 Mat;
 	Mat.makeTransform(mWorldPosition, mWorldScale, mWorldRotation);
+	// Destination matrix is a column matrix ,must be transpose.
+	return Mat.transpose();
+}
 
-	return Mat;
+XMMATRIX SceneNode::GetWorldTransformD3DMath() const
+{
+	XMVECTOR zero = XMLoadFloat3(&XMFLOAT3(0, 0, 0));
+	XMFLOAT3 Pos = XMFLOAT3(mWorldPosition.x, mWorldPosition.y, mWorldPosition.z);
+	XMFLOAT4 Rot = XMFLOAT4(mWorldRotation.x, mWorldRotation.y, mWorldRotation.z, mWorldRotation.w);
+	XMFLOAT3 Scale = XMFLOAT3(mScale.x, mScale.y, mScale.z);
+	XMVECTOR qId = XMLoadFloat4(&XMFLOAT4(0, 0, 0, 1));
+	XMVECTOR S = XMLoadFloat3(&Scale);
+	XMVECTOR P = XMLoadFloat3(&Pos);
+	XMVECTOR Q = XMLoadFloat4(&Rot);
+
+	XMMATRIX mtx = XMMatrixTransformation(zero, qId, S, zero, Q, P);
+
+	return mtx;
 }
 
 void SceneNode::_NotifyModify(SceneNode* Parent)
@@ -239,6 +316,15 @@ void SceneNode::_NotifyModify(SceneNode* Parent)
 		mWorldScale = mParentNode->GetWorldScale() * mScale;
 		mWorldRotation = mParentNode->GetWorldRotation() * mRotation;
 		mWorldPosition = mWorldRotation * mPosition + mParentNode->GetWorldPosition();
+	}
+	_UpdateAllChild();
+}
+
+void SceneNode::_UpdateAllChild()
+{
+	for (size_t i = 0; i < mChildArray.size(); i++)
+	{
+		mChildArray[i]->_NotifyModify(this);
 	}
 }
 

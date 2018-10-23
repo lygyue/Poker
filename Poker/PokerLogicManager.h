@@ -19,6 +19,11 @@ class PokerLogicManager
 public:
 	PokerLogicManager();
 	~PokerLogicManager();
+
+	bool Initialise(HWND hWnd);
+
+	void StartNewGame();
+	void Update();
 public:
 	void OnKeyDown(unsigned char Key);
 	void OnKeyUp(unsigned char Key);
@@ -40,4 +45,5 @@ private:
 
 	CardManager* mCardManager;
 	CardDealer* mCardDealer;
+
 };

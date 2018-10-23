@@ -87,6 +87,33 @@
     <ClInclude Include="Shader.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="RenderGroupManager.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="PokerLogicManager.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="CardDealer.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Card.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Robot.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Player.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Log.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Timer.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="EffectManager.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -134,13 +161,34 @@
     <ClCompile Include="DataBuffer.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="源RenderSystem.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="Texture.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="Shader.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderSystem.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderGroupManager.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="PokerLogicManager.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Card.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="CardDealer.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Log.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Timer.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="EffectManager.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

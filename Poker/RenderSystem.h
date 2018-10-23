@@ -22,7 +22,7 @@ protected:
 	RenderSystemD3D11();
 	~RenderSystemD3D11();
 
-	bool InitialiseD3d11(int Width, int Height, HWND Hwnd);
+	bool Initialise(int Width, int Height, HWND Hwnd);
 
 	void SetAndClearRenderTarget()
 	{

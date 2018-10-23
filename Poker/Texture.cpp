@@ -186,9 +186,21 @@ D3d11Texture* TextureManager::LoadTextureFromMemory(std::string Name, ID3D11Devi
 		return NULL;
 	}
 	D3d11Texture* Texture = new D3d11Texture;
-	resource->QueryInterface(__uuidof(ID3D11Texture2D), (void**)(&Texture->mTexture));
+	hr = resource->QueryInterface(__uuidof(ID3D11Texture2D), (void**)(&Texture->mTexture));
+	if (FAILED(hr))
+	{
+		return NULL;
+	}
 	Texture->mShaderResourceView = srv;
+	Texture->SetName(Name);
 	SAFE_RELEASE(resource);
 	mTextureArray[Name] = Texture;
 	return Texture;
+}
+
+void TextureManager::DestroyTexture(D3d11Texture* Tex)
+{
+	std::string Name = Tex->GetName();
+	mTextureArray.erase(Name);
+	SAFE_DELETE(Tex);
 }

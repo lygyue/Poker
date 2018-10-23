@@ -9,7 +9,7 @@
 #pragma once
 
 #define WINDOW_WIDTH		1600
-#define WINDOW_HEIGHT		1080
+#define WINDOW_HEIGHT		900
 // Four pokers
 #define POKER_COUNT			4
 #define POKER_PIXEL_WIDTH	105

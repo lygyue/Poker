@@ -8,6 +8,7 @@
 	purpose:	
 *********************************************************************/
 #include "SimpleMath.h"
+#include <time.h>
 
 //-----------------------------------------------------------------------
 bool RealEqual(float a, float b, float tolerance)
@@ -43,4 +44,20 @@ float InvSqrt(float fValue)
 float Sqr(float fValue)
 {
 	return fValue*fValue;
+}
+
+float UnitRandom()
+{
+	static bool firstRun = true;
+	if (firstRun)
+	{
+		srand((unsigned)time(NULL));
+		firstRun = false;
+	}
+	return float(rand()) / float(RAND_MAX);
+}
+
+float RangeRandom(float Min, float Max)
+{
+	return (Max - Min)*UnitRandom() + Min;
 }

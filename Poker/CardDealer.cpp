@@ -38,7 +38,7 @@ void CardDealer::Update()
 
 RamdomDealer::RamdomDealer()
 {
-	srand((unsigned)time(NULL));
+	
 }
 
 RamdomDealer::~RamdomDealer()

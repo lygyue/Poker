@@ -11,23 +11,28 @@
 #include "RenderSystem.h"
 #include "RenderGroupManager.h"
 #include "ResourceManager.h"
+#include "EffectManager.h"
 #include "Material.h"
 #include "Mesh.h"
 #include "Texture.h"
 #include "SceneNode.h"
 #include "PokerDef.h"
+#include "Log.h"
+
+#define		NEAR_PLANE				0.01f
+#define		FAR_PLANE				10000.0f
 
 class Camera
 {
 public:
 	Camera() 
 	{
-		mPos = XMVectorSet(0.0f, 0.0f, -5.0f, 0);
+		mPos = XMVectorSet(0.0f, 0.0f, 0.0f, 0);
 		mRot = XMQuaternionIdentity();
 		mFovAngle = DegreesToRadians(90);
 		mAspect = 1920.0f / 1080.0f;
-		mNearPlane = 0.01f;
-		mFarPlane = 100.0f;
+		mNearPlane = NEAR_PLANE;
+		mFarPlane = FAR_PLANE;
 		mViewMatrix = mProjectionMatrix = mViewProjectionMatrix= XMMatrixIdentity();
 	}
 	~Camera(){}
@@ -45,13 +50,21 @@ public:
 		mViewMatrix = (XMMatrixLookAtLH(mPos, XMVectorAdd(mPos, forward), XMVector3Rotate(XMVectorSet(0, 1, 0, 0), mRot)));
 		mViewProjectionMatrix = XMMatrixMultiply(mViewMatrix, mProjectionMatrix);
 	}
+	void RollPitchYaw(float Roll, float Yaw, float Pitch)
+	{
+		XMVECTOR Rot = XMQuaternionRotationRollPitchYaw(Roll, Yaw, Pitch);
+		XMVECTOR DestRot = XMQuaternionMultiply(mRot, Rot);
+		SetRotation(DestRot);
+	}
+
 	void SetProjectionParameters(float Fov, float Aspect, float Near, float Far)
 	{
 		mFovAngle = Fov;
 		mAspect = Aspect;
 		mNearPlane = Near;
 		mFarPlane = Far;
-		mProjectionMatrix = XMMatrixPerspectiveFovLH(mFovAngle, mAspect, mNearPlane, mFarPlane);
+		mProjectionMatrix = XMMatrixOrthographicLH(mFovAngle, mAspect, mNearPlane, mFarPlane);
+		//mProjectionMatrix = XMMatrixPerspectiveFovLH(mFovAngle, mAspect, mNearPlane, mFarPlane);
 		mViewProjectionMatrix = XMMatrixMultiply(mViewMatrix, mProjectionMatrix);
 	}
 	XMMATRIX GetViewMatrix() const
@@ -97,14 +110,22 @@ public:
 	static Scene* GetCurrentScene();
 	static void SetCurrentScene(Scene* S);
 public:
+	bool Initialise(HWND hWnd);
+	void Update();
+public:
 	SceneNode* GetRootSceneNode() const;
+	SceneNode* GetBackGroundNode() const;
 	RenderSystemD3D11* GetRenderSystem() const;
 	RenderGroupManager* GetRenderGroupManager() const;
 	ResourceManager* GetResourceManager() const;
 	MaterialManager* GetMaterialManager() const;
 	MeshManager* GetMeshManager() const;
 	TextureManager* GetTextureManager() const;
+	EffectManager* GetEffectManager() const;
 	Camera* GetCurrentCamera() const;
+	LogImpl* GetLogImpl() const;
+
+	std::string GetApplicationPath() const;
 public:
 	void RenderOneFrame();
 
@@ -113,13 +134,19 @@ protected:
 	~Scene();
 	static Scene* CurrentScene;
 
+	void CreateBackGround();
 private:
 	SceneNode* mRootSceneNode;
+	SceneNode* mBackGroundNode;
 	RenderSystemD3D11* mRenderSystem;
 	RenderGroupManager* mRenderGroupManager;
 	ResourceManager* mResourceManager;
 	MaterialManager* mMaterialManager;
 	MeshManager* mMeshManager;
 	TextureManager* mTextureManager;
+	EffectManager* mEffectManager;
 	Camera* mCamera;
+	LogImpl* mLog;
+	std::string mApplicationPath;
+	HWND mHwnd;
 };

@@ -11,11 +11,18 @@
 #include "Scene.h"
 
 std::string StandardMaterialName[CutomShader] = { "Simple_Black", "Simple_White", "Simple_Red", "Simple_Green", "Simple_Blue", "Simple_Texture_Sample" };
-Material::Material()
+Material::Material(std::string Name)
 {
-	mTex = nullptr;
+	memset(mConstBuffer, 0, sizeof(mConstBuffer));
+	mConstBufferLen = 0;
+	mMainTextureIndex = 0;
+	mTextureCount = 0;
+	for (int i = 0; i < MaxTexture; i++)
+	{
+		mTex[i] = nullptr;
+	}	
 	mShader = nullptr;
-
+	mName = Name;
 	HRESULT result = S_OK;
 	ID3D11Device* Device = Scene::GetCurrentScene()->GetRenderSystem()->GetD3d11Device();
 	// Create sampler state
@@ -60,10 +67,87 @@ Material::~Material()
 	SAFE_RELEASE(mBlendState);
 }
 
+char* Material::GetConstBufferPointer()
+{
+	return mConstBuffer;
+}
+
+void Material::SetConstBufferLen(int Len)
+{
+	mConstBufferLen = Len;
+}
+
+int Material::GetConstBufferLen() const
+{
+	return mConstBufferLen;
+}
+
+std::string Material::GetName() const
+{
+	return mName;
+}
+
+Shader* Material::GetShader() const
+{
+	return mShader;
+}
+
+void Material::SetShader(Shader* S)
+{
+	mShader = S;
+}
+
+void Material::Reset()
+{
+	for (int i = 0; i < mTextureCount; i++)
+	{
+		mTex[i] = nullptr;
+	}
+	mTextureCount = 0;
+}
+
+int Material::GetTextureCount() const
+{
+	return mTextureCount;
+}
+
+D3d11Texture* Material::GetTexture(int TextureIndex) const
+{
+	return mTex[TextureIndex];
+}
+
+void Material::SetTexture(D3d11Texture* Tex, int TextureIndex /* = 0 */)
+{
+	if (TextureIndex >= MaxTexture)
+	{
+		return;
+	}
+	if (mTextureCount < TextureIndex + 1)
+	{
+		mTextureCount = TextureIndex + 1;
+	}
+	mTex[TextureIndex] = Tex;
+}
+
+void Material::SetMainTextureIndex(int TextureIndex)
+{
+	mMainTextureIndex = TextureIndex;
+}
+
+int Material::GetMainTextureIndex() const
+{
+	return mMainTextureIndex;
+}
+
+D3d11Texture* Material::GetMainTexture() const
+{
+	return mTex[mMainTextureIndex];
+}
+
 MaterialManager::MaterialManager()
 {
 	mShaderManager = new ShaderManager;
-	InitialiseBaseMaterial();
+	mCurrentMaterialIndex = 0;
 }
 
 MaterialManager::~MaterialManager()
@@ -76,11 +160,13 @@ MaterialManager::~MaterialManager()
 	mMaterialArray.clear();
 }
 
-void MaterialManager::InitialiseBaseMaterial()
+void MaterialManager::Initialise()
 {
+	mShaderManager->InitialiseStandardShaders();
 	for (int i = 0; i < CutomShader; i++)
 	{
-		Material* Mat = new Material;
+		std::string Name = StandardMaterialName[i];
+		Material* Mat = new Material(Name);
 		Mat->SetShader(mShaderManager->GetShaderByType(BaseShader(i)));
 		mMaterialArray[StandardMaterialName[i]] = Mat;
 	}
@@ -97,14 +183,22 @@ Material* MaterialManager::CreateMaterial(std::string Name, BaseShader BS)
 	{
 		return mMaterialArray[Name];
 	}
-	Material* Mat = new Material;
+	Material* Mat = new Material(Name);
 	if (BS != CutomShader)
 	{
 		Mat->SetShader(mShaderManager->GetShaderByType(BS));
 	}
 	mMaterialArray[Name] = Mat;
-
+	mCurrentMaterialIndex++;
 	return Mat;
+}
+
+Material* MaterialManager::CreateMaterial(BaseShader BS)
+{
+	char szTemp[128];
+	memset(szTemp, 0, 128);
+	sprintf_s(szTemp, 128, "%s%d", "Material_Auto_Generate_Name_", mCurrentMaterialIndex);
+	return CreateMaterial(szTemp, BS);
 }
 
 Material* MaterialManager::GetMaterialByName(std::string Name)
@@ -120,4 +214,17 @@ Material* MaterialManager::GetMaterialByShaderType(BaseShader BS)
 {
 	std::string Name = StandardMaterialName[BS];
 	return GetMaterialByName(Name);
+}
+
+void MaterialManager::DestroyMaterial(std::string Name)
+{
+	if (mMaterialArray.find(Name) == mMaterialArray.end())
+	{
+		return;
+	}
+
+	Material* M = mMaterialArray[Name];
+	SAFE_DELETE(M);
+	mMaterialArray.erase(Name);
+	return;
 }

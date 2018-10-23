@@ -60,29 +60,40 @@ bool Mesh::Initialise(void* VertexBuffer, int VertexElementSize, int VertexCount
 	mVertexElementSize = VertexElementSize;
 	mVertexCount = VertexCount;
 	mIndexCount = IndexCount;
-	VertexBuffer = new DataBuffer(Device, D3D11_BIND_VERTEX_BUFFER, VertexBuffer, VertexCount * VertexElementSize);
-	IndexBuffer = new DataBuffer(Device, D3D11_BIND_INDEX_BUFFER, IndexBuffer, IndexBufferLength);
+	mVertexBuffer = new DataBuffer(Device, D3D11_BIND_VERTEX_BUFFER, VertexBuffer, VertexCount * VertexElementSize);
+	mIndexBuffer = new DataBuffer(Device, D3D11_BIND_INDEX_BUFFER, IndexBuffer, IndexBufferLength);
 	return true;
 }
 
 void Mesh::RenderMesh(Matrix4& WorldTransform) const
 {
-	char UniformBuffer[128];
-	memset(UniformBuffer, 0, sizeof(UniformBuffer));
 	XMMATRIX modelMat = XMMATRIX(WorldTransform[0][0], WorldTransform[0][1], WorldTransform[0][2], WorldTransform[0][3],
 		WorldTransform[1][0], WorldTransform[1][1], WorldTransform[1][2], WorldTransform[1][3],
 		WorldTransform[2][0], WorldTransform[2][1], WorldTransform[2][2], WorldTransform[2][3],
 		WorldTransform[3][0], WorldTransform[3][1], WorldTransform[3][2], WorldTransform[3][3]);
 
+	RenderMesh(modelMat);
+}
+
+void Mesh::RenderMesh(XMMATRIX& WorldTransform) const
+{
+	char UniformBuffer[MAX_CONST_BUFFER];
+	memset(UniformBuffer, 0, sizeof(UniformBuffer));
 	XMMATRIX ViewProjection = Scene::GetCurrentScene()->GetCurrentCamera()->GetProjectViewMatrix();
-	XMMATRIX FinalMatrix = XMMatrixMultiply(modelMat, ViewProjection);
+	XMMATRIX FinalMatrix = XMMatrixMultiply(WorldTransform, ViewProjection);
 	memcpy(UniformBuffer + 0, &FinalMatrix, 64);
+	if (mMaterial->GetConstBufferLen() > 0 && (64 + mMaterial->GetConstBufferLen()) < MAX_CONST_BUFFER)
+	{
+		char* TempPtr = mMaterial->GetConstBufferPointer();
+		int Len = mMaterial->GetConstBufferLen();
+		memcpy(UniformBuffer + 64, TempPtr, Len);
+	}
 	RenderSystemD3D11* RS = Scene::GetCurrentScene()->GetRenderSystem();
 	ID3D11DeviceContext* Context = RS->GetD3d11Context();
 	HRESULT hr = S_OK;
 	D3D11_MAPPED_SUBRESOURCE map;
 	hr = Context->Map(RS->GetUniformBuffer()->D3DBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &map);
-	memcpy(map.pData, UniformBuffer, 128);
+	memcpy(map.pData, UniformBuffer, MAX_CONST_BUFFER);
 	Context->Unmap(RS->GetUniformBuffer()->D3DBuffer, 0);
 
 	Context->IASetInputLayout(mMaterial->mShader->GetD3d11InputLayout());
@@ -93,6 +104,11 @@ void Mesh::RenderMesh(Matrix4& WorldTransform) const
 	Context->VSSetShader(mMaterial->mShader->GetD3d11VertexShader(), NULL, 0);
 	Context->PSSetShader(mMaterial->mShader->GetD3d11PixelShader(), NULL, 0);
 	Context->PSSetSamplers(0, 1, &mMaterial->mSamplerState);
+	int TextureCount = mMaterial->GetTextureCount();
+	for (int i = 0; i < TextureCount; i++)
+	{
+		Context->PSSetShaderResources(i, 1, mMaterial->GetTexture(i)->GetShaderResourceViewPtr());
+	}
 	Context->RSSetState(mMaterial->mRasterizer);
 	Context->OMSetDepthStencilState(mMaterial->mDepthState, 0);
 	Context->OMSetBlendState(mMaterial->mBlendState, NULL, 0xffffffff);
@@ -127,9 +143,9 @@ Mesh* MeshManager::CreateMesh(std::string Name, void* VertexBuffer, int VertexEl
 	return nullptr;
 }
 
-Mesh* MeshManager::CreateQuad(std::string Name, Vector3* Vertex)
+Mesh* MeshManager::CreateQuad(std::string Name, Vector3* Vertex/* = nullptr*/)
 {
-	if (mMeshArray.find(NULL) != mMeshArray.end())
+	if (mMeshArray.find(Name) != mMeshArray.end())
 	{
 		return mMeshArray[Name];
 	}
@@ -139,10 +155,20 @@ Mesh* MeshManager::CreateQuad(std::string Name, Vector3* Vertex)
 		Vector2 TexCoord;
 	};
 	QuadStruct QS[4];
-	QS[0].Position = Vertex[0];
-	QS[1].Position = Vertex[1];
-	QS[2].Position = Vertex[2];
-	QS[3].Position = Vertex[3];
+	if (Vertex)
+	{
+		QS[0].Position = Vertex[0];
+		QS[1].Position = Vertex[1];
+		QS[2].Position = Vertex[2];
+		QS[3].Position = Vertex[3];
+	}
+	else
+	{
+		QS[0].Position = Vector3(-1, 1, 0);
+		QS[1].Position = Vector3(1, 1, 0);
+		QS[2].Position = Vector3(1, -1, 0);
+		QS[3].Position = Vector3(-1, -1, 0);
+	}
 	QS[0].TexCoord = Vector2(0, 0);
 	QS[1].TexCoord = Vector2(1, 0);
 	QS[2].TexCoord = Vector2(1, 1);
@@ -171,6 +197,17 @@ Mesh* MeshManager::CreateLine(std::string Name, Vector3* Vertex)
 
 Mesh* MeshManager::CreateSphere(std::string Name, int Col, int Row, float Radius)
 {
+	return nullptr;
+}
+
+Mesh* MeshManager::CreateBox(std::string Name, const Vector3& V)
+{
+	struct VertexElement
+	{
+		Vector3 Pos;
+		Vector2 UV;
+	};
+
 	return nullptr;
 }
 

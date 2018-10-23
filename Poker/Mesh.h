@@ -28,6 +28,7 @@ protected:
 
 	bool Initialise(void* VertexBuffer, int VertexElementSize, int VertexCount, void* IndexBuffer, int IndexCount, D3D11_PRIMITIVE_TOPOLOGY Primitive = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	void RenderMesh(Matrix4& WorldTransform) const;
+	void RenderMesh(XMMATRIX& WorldTransform) const;
 private:
 	std::string mName;
 	Material* mMaterial;
@@ -45,9 +46,10 @@ class MeshManager
 	friend class Scene;
 public:
 	Mesh* CreateMesh(std::string Name, void* VertexBuffer, int VertexElementSize, int VertexCount, void* IndexBuffer, int IndexCount);
-	Mesh* CreateQuad(std::string Name, Vector3* Vertex);
+	Mesh* CreateQuad(std::string Name, Vector3* Vertex = nullptr);
 	Mesh* CreateLine(std::string Name, Vector3* Vertex);
 	Mesh* CreateSphere(std::string Name, int Col, int Row, float Radius);
+	Mesh* CreateBox(std::string Name, const Vector3& V);
 
 	Mesh* GetMeshByName(std::string Name);
 

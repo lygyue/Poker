@@ -22,6 +22,10 @@ public:
 	{
 		return mName;
 	}
+	void SetName(std::string Name)
+	{
+		mName = Name;
+	}
 	ID3D11Texture2D* GetTexture()
 	{
 		return mTexture;
@@ -33,6 +37,10 @@ public:
 	ID3D11ShaderResourceView* GetShaderResourceView()
 	{
 		return mShaderResourceView;
+	}
+	ID3D11ShaderResourceView** GetShaderResourceViewPtr()
+	{
+		return &mShaderResourceView;
 	}
 	DepthBuffer* GetDepthBuffer()
 	{
@@ -61,6 +69,8 @@ public:
 
 	D3d11Texture* LoadTextureFromFile(std::string Name, ID3D11Device* Device, const char* FullFileName, bool IsDDS);
 	D3d11Texture* LoadTextureFromMemory(std::string Name, ID3D11Device* Device, unsigned char* FileData, int FileLength, bool IsDDS);
+
+	void DestroyTexture(D3d11Texture* Tex);
 protected:
 	TextureManager();
 	~TextureManager();

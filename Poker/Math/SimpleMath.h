@@ -98,6 +98,8 @@ extern inline float RadiansToDegrees(float radians);
 extern inline bool isNaN(float f);
 extern float InvSqrt(float fValue);
 extern inline float Sqr(float fValue);
+extern float UnitRandom();
+extern float RangeRandom(float Min, float Max);
 
 class Degree;
 
@@ -234,5 +236,6 @@ inline Degree operator / (float a, const Degree& b)
 {
 	return Degree(a / b.valueDegrees());
 }
+
 
 #endif
