@@ -9,6 +9,7 @@
 *********************************************************************/
 #include "SimpleMath.h"
 #include <time.h>
+#include "Matrix4.h"
 
 //-----------------------------------------------------------------------
 bool RealEqual(float a, float b, float tolerance)
@@ -61,3 +62,4 @@ float RangeRandom(float Min, float Max)
 {
 	return (Max - Min)*UnitRandom() + Min;
 }
+

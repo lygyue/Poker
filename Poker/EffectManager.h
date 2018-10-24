@@ -9,11 +9,14 @@
  * 
  **********************************************/
 #pragma once
+#include <vector>
 #include <map>
 #include <xstring>
+#include "Math/SimpleMath.h"
 
 enum Effect_Type
 {
+	Effect_Separate_Tile,
 	Effect_Rotate_Out_In,
 	Effect_Fade_In,
 	Effect_Fade_Out,
@@ -149,6 +152,29 @@ protected:
 
 	virtual void Update() override;
 private:
+};
+//-----------------------------------------------------------------------
+class SimpleSpline;
+class Effect_SeparateTile : public Effect
+{
+	friend class EffectManager;
+public:
+protected:
+	Effect_SeparateTile();
+	virtual ~Effect_SeparateTile();
+
+	SimpleSpline* CreateSimpleSpline(Vector3& DestPosition, float DestDepth) const;
+	void SetTile(int X, int Y);
+	virtual void Initialise() override;
+	virtual void Update() override;
+private:
+	int mTileX;
+	int mTileY;
+	SceneNode* mAnimationRoot;
+	std::vector<Mesh*> mAnimationMeshArray;
+	std::vector<SceneNode*> mAnimationNodeArray;
+	std::vector<SimpleSpline*> mAnimationSplineArray;
+	std::vector<int> mAnimationRandomCircleArray;
 };
 //-----------------------------------------------------------------------
 class EffectManager

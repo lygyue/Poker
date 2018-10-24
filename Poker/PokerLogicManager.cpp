@@ -90,6 +90,15 @@ void PokerLogicManager::Update()
 		if (CurrentIndex == Effect_Norma_Brightness_Normal) Acceleration = 0.0f;
 		if (CurrentIndex == Effect_Left_Right_Left) Acceleration = 2.0f;
 		if (CurrentIndex == Effect_Rotate_Out_In) Acceleration = 4.0f;
+		if (CurrentIndex == Effect_Separate_Tile)
+		{
+			Acceleration = -4.0f;
+			EffectTimeLen = 9.0f;
+		}
+		else
+		{
+			EffectTimeLen = 6.0f;
+		}
 		CurrentEffect = EffectMgr->CreateEffect("TestTest", (Effect_Type)CurrentIndex, EffectTimeLen, false, false, Acceleration, M, BackGroundNode, NewTexturePath.c_str());
 		CurrentIndex++;
 		CurrentIndex %= Effect_Max;

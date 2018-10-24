@@ -14,6 +14,8 @@
 #include "Mesh.h"
 #include "Scene.h"
 #include "Timer.h"
+#include "Math/Vector2.h"
+#include "Functional.h"
 
 Effect::Effect()
 {
@@ -283,7 +285,10 @@ EffectN_B_N::EffectN_B_N()
 
 EffectN_B_N::~EffectN_B_N()
 {
-
+	Material* Mat = mAttachMesh->GetMaterial();
+	MaterialManager* MatMgr = Scene::GetCurrentScene()->GetMaterialManager();
+	MatMgr->DestroyMaterial(Mat->GetName());
+	mAttachMesh->SetMaterial(mOriginalMaterial);
 }
 
 void EffectN_B_N::Initialise()
@@ -369,6 +374,148 @@ void Effect_RotateOutIn::Update()
 	mAttachSceneNode->SetScale(Scale);
 	SetAlphaToConstBuffer(Alpha);
 }
+//-----------------------------------------------------------------------
+Effect_SeparateTile::Effect_SeparateTile()
+{
+	mTileX = mTileY = 4;
+	mAnimationRoot = nullptr;
+}
+
+Effect_SeparateTile::~Effect_SeparateTile()
+{
+	if (mAnimationRoot)
+	{
+		Scene::GetCurrentScene()->GetRootSceneNode()->RemoveAndDestroyChild(mAnimationRoot);
+		mAnimationRoot = nullptr;
+	}
+	Material* Mat = mAnimationMeshArray[0]->GetMaterial();
+	D3d11Texture* Tex = mOriginalMaterial->GetTexture(0);
+	Scene::GetCurrentScene()->GetTextureManager()->DestroyTexture(Tex);
+	mOriginalMaterial->SetTexture(Mat->GetTexture(0));
+	MaterialManager* MatMgr = Scene::GetCurrentScene()->GetMaterialManager();
+	MatMgr->DestroyMaterial(Mat->GetName());
+	for (size_t i = 0; i < mAnimationMeshArray.size(); i++)
+	{
+		Scene::GetCurrentScene()->GetMeshManager()->DestroyMesh(mAnimationMeshArray[i]);
+	}
+	mAnimationMeshArray.clear();
+	for (size_t i = 0; i < mAnimationSplineArray.size(); i++)
+	{
+		SAFE_DELETE(mAnimationSplineArray[i]);
+	}
+	mAnimationSplineArray.clear();
+}
+
+void Effect_SeparateTile::Initialise()
+{
+	mOriginalMaterial = mAttachMesh->GetMaterial();
+	int Tiles = mTileX * mTileY;
+	// create root node
+	mAnimationRoot = Scene::GetCurrentScene()->GetRootSceneNode()->CreateChild("Effect_SeparateTile_Animation_Root_Node", Vector3::ZERO, Quaternion::IDENTITY, Vector3(1, 1, 1));
+	// create meshes and scene nodes
+	float xStep = 2.0f / float(mTileX);
+	float yStep = 2.0f / float(mTileY);
+	float uStep = 1.0f / float(mTileX);
+	float vStep = 1.0f / float(mTileY);
+	float NodeDepth = FAR_PLANE - 15.0f;
+	char szName[128];
+	// create the new material
+	MaterialManager* MatMgr = Scene::GetCurrentScene()->GetMaterialManager();
+	Material* CurrentMaterial = MatMgr->CreateMaterial(SimpleTextureSample);
+	if (!mNextTexturePath.empty())
+	{
+		TextureManager* TexMgr = Scene::GetCurrentScene()->GetTextureManager();
+		RenderSystemD3D11* RS = Scene::GetCurrentScene()->GetRenderSystem();
+		D3d11Texture* Tex = TexMgr->LoadTextureFromFile(mNextTexturePath, RS->GetD3d11Device(), mNextTexturePath.c_str(), false);
+		CurrentMaterial->SetTexture(Tex);
+	}
+	for (int i = 0; i < mTileY; i++)
+	{
+		for (int j = 0; j < mTileX; j++)
+		{
+			memset(szName, 0, sizeof(szName));
+			sprintf_s(szName, 128, "%s_%d_%d", "Effect_SeparateTile_Animation_Root_Node_Child", j, i);
+			SceneNode* Node = mAnimationRoot->CreateChild(szName, Vector3::ZERO, Quaternion::IDENTITY, Vector3(1, 1, 1));
+			mAnimationNodeArray.push_back(Node);
+			float xCenter = (xStep / 2.0f) + j * xStep - 1.0f;
+			float yCenter = (yStep / 2.0f) + i * yStep - 1.0f;
+			mAnimationSplineArray.push_back(CreateSimpleSpline(Vector3(xCenter, yCenter, NodeDepth), NodeDepth));
+			Vector3 Pos[4];
+			Vector2 UV[4];
+			Pos[0] = Vector3(-xStep / 2.0f, yStep / 2.0f, 0);
+			Pos[1] = Vector3(xStep / 2.0f, yStep / 2.0f, 0);
+			Pos[2] = Vector3(xStep / 2.0f, -yStep / 2.0f, 0);
+			Pos[3] = Vector3(-xStep / 2.0f, -yStep / 2.0f, 0);
+			UV[0] = Vector2(uStep * j, 1.0f - vStep * (i + 1));
+			UV[1] = Vector2(uStep * (j + 1), 1.0f - vStep * (i + 1));
+			UV[2] = Vector2(uStep * (j + 1), 1.0f - vStep * i);
+			UV[3] = Vector2(uStep * j, 1.0f - vStep * i);
+			Mesh* M = Scene::GetCurrentScene()->GetMeshManager()->CreateQuad(szName, Pos, UV);
+			M->SetMaterial(CurrentMaterial);
+			Node->AttachMesh(M);
+			mAnimationMeshArray.push_back(M);
+			mAnimationRandomCircleArray.push_back(RangeRandom(0, mTotalTime));
+			NodeDepth--;
+		}
+	}
+}
+
+SimpleSpline* Effect_SeparateTile::CreateSimpleSpline(Vector3& DestPosition, float DestDepth) const
+{
+	SimpleSpline* SSP = new SimpleSpline;
+	float x, y;
+	x = RangeRandom(-5.0f, 5.0f);
+	y = RangeRandom(-5.0f, 5.0f);
+	if (x <= 0)
+	{
+		x -= 1.0f;		// (-2 .-1) range
+	}
+	else
+	{
+		x += 1.0f;		// (1, 2) range
+	}
+	if (y <= 0)
+	{
+		y -= 1.0f;
+	}
+	else
+	{
+		y += 1.0f;
+	}
+	// first point
+	SSP->addPoint(Vector3(x, y, DestDepth));
+	x = RangeRandom(-1.0f, 1.0f);
+	y = RangeRandom(-1.0f, 1.0f);
+	// second point
+	SSP->addPoint(Vector3(x, y, DestDepth));
+	// third point, the screen center
+	SSP->addPoint(Vector3(0, 0, DestDepth));
+	// fourth point
+	SSP->addPoint(DestPosition);
+
+	return SSP;
+}
+
+void Effect_SeparateTile::SetTile(int X, int Y)
+{
+	mTileX = X;
+	mTileY = Y;
+}
+
+void Effect_SeparateTile::Update()
+{
+	float Alpha = CalculateCurrentAlpha();
+
+	for (size_t i = 0; i < mAnimationSplineArray.size(); i++)
+	{
+		float CurrentRollRadians = (PI * 2) * mAnimationRandomCircleArray[i] * Alpha * -1.0f;
+		Quaternion q;
+		q.FromAngleAxis(Radian(CurrentRollRadians), Vector3::UNIT_Z);
+		mAnimationNodeArray[i]->SetRotation(q);
+		Vector3 pos = mAnimationSplineArray[i]->interpolate(Alpha);
+		mAnimationNodeArray[i]->SetPosition(pos);
+	}
+}
 
 //-----------------------------------------------------------------------
 EffectManager::EffectManager()
@@ -429,6 +576,11 @@ Effect* EffectManager::CreateEffect(std::string Name, Effect_Type ET, float Tota
 		Effect_RotateOutIn* EF = new Effect_RotateOutIn;
 		EF->SetShaderType(SimpleN_B_N);
 		E = EF;
+		break;
+	}
+	case Effect_Separate_Tile:
+	{
+		E = new Effect_SeparateTile;
 		break;
 	}
 	default:

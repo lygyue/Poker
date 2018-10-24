@@ -102,7 +102,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>E:\Workdir\Poker\DirectXTK-master\Inc</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\DirectXTK-master\Inc</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -152,6 +152,7 @@
     <ClInclude Include="Common.h" />
     <ClInclude Include="DataBuffer.h" />
     <ClInclude Include="EffectManager.h" />
+    <ClInclude Include="Functional.h" />
     <ClInclude Include="Log.h" />
     <ClInclude Include="Material.h" />
     <ClInclude Include="Math\Matrix3.h" />
@@ -184,6 +185,7 @@
     <ClCompile Include="CardDealer.cpp" />
     <ClCompile Include="DataBuffer.cpp" />
     <ClCompile Include="EffectManager.cpp" />
+    <ClCompile Include="Functional.cpp" />
     <ClCompile Include="Log.cpp" />
     <ClCompile Include="Material.cpp" />
     <ClCompile Include="Math\Matrix3.cpp" />

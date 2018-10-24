@@ -143,7 +143,7 @@ Mesh* MeshManager::CreateMesh(std::string Name, void* VertexBuffer, int VertexEl
 	return nullptr;
 }
 
-Mesh* MeshManager::CreateQuad(std::string Name, Vector3* Vertex/* = nullptr*/)
+Mesh* MeshManager::CreateQuad(std::string Name, Vector3* Vertex/* = nullptr*/, Vector2* TexCoord/* = nullptr*/)
 {
 	if (mMeshArray.find(Name) != mMeshArray.end())
 	{
@@ -169,10 +169,21 @@ Mesh* MeshManager::CreateQuad(std::string Name, Vector3* Vertex/* = nullptr*/)
 		QS[2].Position = Vector3(1, -1, 0);
 		QS[3].Position = Vector3(-1, -1, 0);
 	}
-	QS[0].TexCoord = Vector2(0, 0);
-	QS[1].TexCoord = Vector2(1, 0);
-	QS[2].TexCoord = Vector2(1, 1);
-	QS[3].TexCoord = Vector2(0, 1);
+	if (TexCoord)
+	{
+		QS[0].TexCoord = TexCoord[0];
+		QS[1].TexCoord = TexCoord[1];
+		QS[2].TexCoord = TexCoord[2];
+		QS[3].TexCoord = TexCoord[3];
+	}
+	else
+	{
+		QS[0].TexCoord = Vector2(0, 0);
+		QS[1].TexCoord = Vector2(1, 0);
+		QS[2].TexCoord = Vector2(1, 1);
+		QS[3].TexCoord = Vector2(0, 1);
+	}
+
 	// assume as 0, 1, 2, 3
 	short Indexbuffer[6] = { 0, 1, 3, 1, 2, 3 };
 	Mesh* M = new Mesh(Name);
@@ -222,7 +233,7 @@ Mesh* MeshManager::GetMeshByName(std::string Name)
 
 bool MeshManager::DestroyMesh(std::string Name)
 {
-	if (mMeshArray.find(NULL) == mMeshArray.end())
+	if (mMeshArray.find(Name) == mMeshArray.end())
 	{
 		return false;
 	}

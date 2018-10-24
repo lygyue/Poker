@@ -11,6 +11,7 @@
 #define __SIMPLE_MATH_H__
 #include <math.h>
 #include <algorithm>
+#include <vector>
 
 #define PI			3.141592654f
 #define TWO_PI		(2 * PI)
@@ -236,6 +237,5 @@ inline Degree operator / (float a, const Degree& b)
 {
 	return Degree(a / b.valueDegrees());
 }
-
 
 #endif

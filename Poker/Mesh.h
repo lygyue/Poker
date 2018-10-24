@@ -46,7 +46,7 @@ class MeshManager
 	friend class Scene;
 public:
 	Mesh* CreateMesh(std::string Name, void* VertexBuffer, int VertexElementSize, int VertexCount, void* IndexBuffer, int IndexCount);
-	Mesh* CreateQuad(std::string Name, Vector3* Vertex = nullptr);
+	Mesh* CreateQuad(std::string Name, Vector3* Vertex = nullptr, Vector2* TexCoord = nullptr);
 	Mesh* CreateLine(std::string Name, Vector3* Vertex);
 	Mesh* CreateSphere(std::string Name, int Col, int Row, float Radius);
 	Mesh* CreateBox(std::string Name, const Vector3& V);

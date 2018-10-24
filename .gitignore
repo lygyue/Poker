@@ -1,1 +1,12 @@
-*.obj *.log *.tlog
+*.obj 
+*.log 
+*.tlog
+*.db
+*.pdb
+*.suo
+*.gitattributes
+*.gitignore
+*.sdf
+*.pch
+*.idb
+*.ilk
