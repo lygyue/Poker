@@ -7,6 +7,7 @@
  * 
  */
 #include "Texture.h"
+#include "Scene.h"
 #include <stdio.h>
 
 D3d11Texture::D3d11Texture()
@@ -15,9 +16,11 @@ D3d11Texture::D3d11Texture()
 	mRenderTargetView = NULL;
 	mShaderResourceView = NULL;
 	mDepthBuffer = NULL;
+	mSurface = nullptr;
+	mCpuAccess = false;
 }
 
-bool D3d11Texture::Initialise(std::string Name, ID3D11Device* Device, int Width, int Height, DXGI_FORMAT Format, int MipLevel, bool IsRenderTarget)
+bool D3d11Texture::Initialise(std::string Name, ID3D11Device* Device, int Width, int Height, DXGI_FORMAT Format, int MipLevel, bool IsRenderTarget, bool CPUAccess)
 {
 	HRESULT err;
 	D3D11_TEXTURE2D_DESC td;
@@ -29,7 +32,17 @@ bool D3d11Texture::Initialise(std::string Name, ID3D11Device* Device, int Width,
 	td.Format = Format;
 	td.SampleDesc.Count = 1;
 	td.SampleDesc.Quality = 0;
-	td.Usage = D3D11_USAGE_DEFAULT;
+	if (CPUAccess)
+	{
+		td.Usage = D3D11_USAGE_DYNAMIC;
+		td.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	}
+	else
+	{
+		td.Usage = D3D11_USAGE_DEFAULT;
+		td.CPUAccessFlags = 0;
+	}
+
 	if (IsRenderTarget)
 	{
 		td.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
@@ -39,7 +52,6 @@ bool D3d11Texture::Initialise(std::string Name, ID3D11Device* Device, int Width,
 	{
 		td.BindFlags = D3D11_BIND_SHADER_RESOURCE;
 	}
-	td.CPUAccessFlags = 0;
 	td.MiscFlags = 0;
 
 	ID3D11Texture2D *texVal;
@@ -86,6 +98,9 @@ bool D3d11Texture::Initialise(std::string Name, ID3D11Device* Device, int Width,
 	mTexture = texVal;
 	mRenderTargetView = view;
 	mName = Name;
+	// If a texture is load from disk, it can't be access by the CPU, because it may be a DDS file ,not a bitmap.
+	// So, mCpuAccess been set to false unless the texture is create in memory.
+	mCpuAccess = CPUAccess;
 	return true;
 }
 
@@ -114,7 +129,7 @@ D3d11Texture* TextureManager::CreateRenderTarget(std::string Name, ID3D11Device*
 		return mTextureArray[Name];
 	}
 	D3d11Texture* target = new D3d11Texture();
-	if (target->Initialise(Name, Device, Width, Height, format, 1, true) == false)
+	if (target->Initialise(Name, Device, Width, Height, format, 1, true, false) == false)
 	{
 		SAFE_DELETE(target);
 		return NULL;
@@ -124,14 +139,14 @@ D3d11Texture* TextureManager::CreateRenderTarget(std::string Name, ID3D11Device*
 	return target;
 }
 
-D3d11Texture* TextureManager::CreateTexture(std::string Name, ID3D11Device* Device, int Width, int Height, DXGI_FORMAT format /* = DXGI_FORMAT_B8G8R8A8_UNORM */, int MipLevel /* = 1 */)
+D3d11Texture* TextureManager::CreateTexture(std::string Name, ID3D11Device* Device, int Width, int Height, DXGI_FORMAT format /* = DXGI_FORMAT_B8G8R8A8_UNORM */, int MipLevel /* = 1 */, bool CPUAccess/* = false*/)
 {
 	if (mTextureArray.find(Name) != mTextureArray.end())
 	{
 		return mTextureArray[Name];
 	}
 	D3d11Texture* texture = new D3d11Texture();
-	if (texture->Initialise(Name, Device, Width, Height, format, MipLevel, false) == false)
+	if (texture->Initialise(Name, Device, Width, Height, format, MipLevel, false, CPUAccess) == false)
 	{
 		SAFE_DELETE(texture);
 		return NULL;
@@ -203,4 +218,47 @@ void TextureManager::DestroyTexture(D3d11Texture* Tex)
 	std::string Name = Tex->GetName();
 	mTextureArray.erase(Name);
 	SAFE_DELETE(Tex);
+}
+
+bool D3d11Texture::BlitToTexture(unsigned char* Data, int Len)
+{
+	D3D11_MAPPED_SUBRESOURCE mappedResource;
+	ZeroMemory(&mappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
+	//  Disable GPU access to the vertex buffer data.
+	auto d3dContext = Scene::GetCurrentScene()->GetRenderSystem()->GetD3d11Context();
+	HRESULT hr = d3dContext->Map(mTexture, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+	if (hr == S_OK)
+	{
+		//  Update the vertex buffer here.
+		memcpy(mappedResource.pData, Data, Len);
+		//  Reenable GPU access to the vertex buffer data.
+		d3dContext->Unmap(mTexture, 0);
+		return true;
+	}
+	return false;
+}
+
+bool D3d11Texture::Map(BYTE*& lpData, UINT &pitch)
+{
+	if (!mCpuAccess) return false;
+	HRESULT err;
+	DXGI_MAPPED_RECT map;
+	HRESULT hr = mTexture->QueryInterface(__uuidof(IDXGISurface1), (void **)&mSurface);
+
+	if (FAILED(err = mSurface->Map(&map, DXGI_MAP_READ)))
+	{
+		OutputDebugStringA(("D3D11Texture::Map: map failed"));
+		return false;
+	}
+
+	lpData = (BYTE*)map.pBits;
+	pitch = map.Pitch;
+
+	return true;
+}
+
+void D3d11Texture::Unmap()
+{
+	mSurface->Unmap();
+	SAFE_RELEASE(mSurface);
 }

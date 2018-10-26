@@ -10,12 +10,17 @@
  **********************************************/
 #pragma once
 #include <vector>
+#include <list>
 #include <map>
 #include <xstring>
 #include "Math/SimpleMath.h"
 
 enum Effect_Type
 {
+	Effect_Simple_Lighting,
+	Effect_GPU_Rotate_Helix,
+	Effect_Layer_Alpha,
+	Effect_Elipse_Scale,
 	Effect_Separate_Tile,
 	Effect_Rotate_Out_In,
 	Effect_Fade_In,
@@ -119,6 +124,7 @@ protected:
 
 	virtual void Initialise() override;
 	virtual void Update() override;
+
 };
 //-----------------------------------------------------------------------
 enum BaseShader;
@@ -175,6 +181,39 @@ private:
 	std::vector<SceneNode*> mAnimationNodeArray;
 	std::vector<SimpleSpline*> mAnimationSplineArray;
 	std::vector<int> mAnimationRandomCircleArray;
+};
+//-----------------------------------------------------------------------
+class EffectLayerAlpha : public Effect
+{
+	friend class EffectManager;
+public:
+protected:
+	EffectLayerAlpha();
+	virtual ~EffectLayerAlpha();
+
+	virtual void Initialise() override;
+	virtual void Update() override;
+private:
+	int mAlphaTextureWidth;
+	int mAlphaTextureHeight;
+	int mBeenSetPixels;
+	std::list<int> mAlphaPixelArray;
+	Material* mCurrentMaterial;
+	unsigned char* mAlphaTextureData;
+};
+//-----------------------------------------------------------------------
+class EffectSimpleLighting : public Effect
+{
+	friend class EffectManager;
+public:
+protected:
+	EffectSimpleLighting();
+	virtual ~EffectSimpleLighting();
+
+	virtual void Initialise() override;
+	virtual void Update() override;
+private:
+	bool mSwitchTexture;
 };
 //-----------------------------------------------------------------------
 class EffectManager

@@ -27,6 +27,10 @@ enum BaseShader
 	SimpleFadeInOut,
 	SimpleN_B_N,			// normal - brightness - normal
 	SimpleL_R_L,			// left - right - left
+	SimpleElipseScale,
+	SimpleLayerAlpha,
+	SimpleHelix,
+	SimpleLighting,
 	CutomShader,
 };
 enum ShaderElement

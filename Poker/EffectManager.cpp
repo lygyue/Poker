@@ -516,6 +516,140 @@ void Effect_SeparateTile::Update()
 		mAnimationNodeArray[i]->SetPosition(pos);
 	}
 }
+//-----------------------------------------------------------------------
+EffectLayerAlpha::EffectLayerAlpha()
+{
+	mCurrentMaterial = nullptr;
+	mAlphaTextureHeight = 128;
+	mAlphaTextureWidth = 128;
+	mBeenSetPixels = 0;
+	int TotalAlphaPixels = mAlphaTextureHeight * mAlphaTextureWidth;
+	mAlphaTextureData = new unsigned char[TotalAlphaPixels];
+	memset(mAlphaTextureData, 0, TotalAlphaPixels);
+	for (int i = 0; i < TotalAlphaPixels; i++)
+	{
+		mAlphaPixelArray.push_back(i);
+	}
+}
+
+EffectLayerAlpha::~EffectLayerAlpha()
+{
+	MaterialManager* MatMgr = Scene::GetCurrentScene()->GetMaterialManager();
+	// destroy old texture
+	D3d11Texture* Tex = mCurrentMaterial->GetTexture(0);
+	TextureManager* TexMgr = Scene::GetCurrentScene()->GetTextureManager();
+	TexMgr->DestroyTexture(Tex);
+	// destroy alpha texture
+	Tex = mCurrentMaterial->GetTexture(2);
+	TexMgr->DestroyTexture(Tex);
+	MatMgr->DestroyMaterial(mCurrentMaterial->GetName());
+	mCurrentMaterial = nullptr;
+	mAttachMesh->SetMaterial(mOriginalMaterial);
+	SAFE_DELETE_ARRAY(mAlphaTextureData);
+}
+
+void EffectLayerAlpha::Initialise()
+{
+	mOriginalMaterial = mAttachMesh->GetMaterial();
+	MaterialManager* MatMgr = Scene::GetCurrentScene()->GetMaterialManager();
+	Material* CurrentMaterial = MatMgr->CreateMaterial(SimpleLayerAlpha);
+
+	TextureManager* TexMgr = Scene::GetCurrentScene()->GetTextureManager();
+	RenderSystemD3D11* RS = Scene::GetCurrentScene()->GetRenderSystem();
+	D3d11Texture* Tex = TexMgr->LoadTextureFromFile(mNextTexturePath, RS->GetD3d11Device(), mNextTexturePath.c_str(), false);
+	D3d11Texture* OldTex = mOriginalMaterial->GetTexture(0);
+	CurrentMaterial->SetTexture(OldTex, 0);
+	CurrentMaterial->SetTexture(Tex, 1);
+	mOriginalMaterial->SetTexture(Tex);
+	// Create Alpha Texture for blend
+	D3d11Texture* AlphaTex = TexMgr->CreateTexture("LayerAlphaTexture", RS->GetD3d11Device(), mAlphaTextureWidth, mAlphaTextureHeight, DXGI_FORMAT_R8_UNORM, 1, true);
+	CurrentMaterial->SetTexture(AlphaTex, 2);
+	mAttachMesh->SetMaterial(CurrentMaterial);
+	mCurrentMaterial = CurrentMaterial;
+}
+
+void EffectLayerAlpha::Update()
+{
+	float Alpha = CalculateCurrentAlpha();
+	int TotalAlphaPixels = mAlphaTextureHeight * mAlphaTextureWidth;
+	int ALphaPixels = TotalAlphaPixels * Alpha;
+	int NeedSetPixels = ALphaPixels - mBeenSetPixels;
+	if (NeedSetPixels == 0)
+	{
+		return;
+	}
+	mBeenSetPixels = ALphaPixels;
+	for (int i = 0; i < NeedSetPixels; i++)
+	{
+		int pos = RangeRandom(0, float(mAlphaPixelArray.size()) - 0.001);
+		std::list<int>::iterator it = mAlphaPixelArray.begin();
+		std::advance(it, pos);
+		mAlphaTextureData[*it] = 255;
+		mAlphaPixelArray.erase(it);
+	}
+	BYTE* data = NULL;
+	UINT pitch = 0;
+	D3d11Texture* AlphaTex = mCurrentMaterial->GetTexture(2);
+	AlphaTex->BlitToTexture(mAlphaTextureData, TotalAlphaPixels);
+}
+//-----------------------------------------------------------------------
+EffectSimpleLighting::EffectSimpleLighting()
+{
+	mSwitchTexture = false;
+}
+EffectSimpleLighting::~EffectSimpleLighting()
+{
+	Material* Mat = mAttachMesh->GetMaterial();
+	MaterialManager* MatMgr = Scene::GetCurrentScene()->GetMaterialManager();
+	// destroy old texture
+	D3d11Texture* Tex = Mat->GetTexture(1);
+	TextureManager* TexMgr = Scene::GetCurrentScene()->GetTextureManager();
+	TexMgr->DestroyTexture(Tex);
+	MatMgr->DestroyMaterial(Mat->GetName());
+	mAttachMesh->SetMaterial(mOriginalMaterial);
+}
+
+void EffectSimpleLighting::Initialise()
+{
+	mOriginalMaterial = mAttachMesh->GetMaterial();
+	MaterialManager* MatMgr = Scene::GetCurrentScene()->GetMaterialManager();
+	Material* CurrentMaterial = MatMgr->CreateMaterial(SimpleLighting);
+	if (!mNextTexturePath.empty())
+	{
+		TextureManager* TexMgr = Scene::GetCurrentScene()->GetTextureManager();
+		RenderSystemD3D11* RS = Scene::GetCurrentScene()->GetRenderSystem();
+		D3d11Texture* Tex = TexMgr->LoadTextureFromFile(mNextTexturePath, RS->GetD3d11Device(), mNextTexturePath.c_str(), false);
+		D3d11Texture* OldTex = mOriginalMaterial->GetTexture(0);
+		CurrentMaterial->SetTexture(OldTex, 0);
+		CurrentMaterial->SetTexture(Tex, 1);
+		mOriginalMaterial->SetTexture(Tex);
+	}
+	mAttachMesh->SetMaterial(CurrentMaterial);
+}
+
+void EffectSimpleLighting::Update()
+{
+	float Alpha = CalculateCurrentAlpha();
+	if (Alpha > 0.5f)
+	{
+		Alpha -= 0.5f;
+		Alpha *= 2;
+		Alpha = 1.0f - Alpha;
+		if (!mSwitchTexture)
+		{
+			mSwitchTexture = true;
+			D3d11Texture* Tex0 = mAttachMesh->GetMaterial()->GetTexture(0);
+			D3d11Texture* Tex1 = mAttachMesh->GetMaterial()->GetTexture(1);
+			mAttachMesh->GetMaterial()->SetTexture(Tex1, 0);
+			mAttachMesh->GetMaterial()->SetTexture(Tex0, 1);
+		}
+	}
+	else
+	{
+		Alpha *= 2;
+	}
+	SetAlphaToConstBuffer(Alpha);
+}
 
 //-----------------------------------------------------------------------
 EffectManager::EffectManager()
@@ -581,6 +715,32 @@ Effect* EffectManager::CreateEffect(std::string Name, Effect_Type ET, float Tota
 	case Effect_Separate_Tile:
 	{
 		E = new Effect_SeparateTile;
+		break;
+	}
+	case Effect_Elipse_Scale:
+	{
+		EffectN_B_N* EF = new EffectN_B_N;
+		EF->SetShaderType(SimpleElipseScale);
+		E = EF;
+		break;
+	}
+	case Effect_Layer_Alpha:
+	{
+		EffectLayerAlpha* EF = new EffectLayerAlpha;
+		E = EF;
+		break;
+	}
+	case Effect_GPU_Rotate_Helix:
+	{
+		EffectN_B_N* EF = new EffectN_B_N;
+		EF->SetShaderType(SimpleHelix);
+		E = EF;
+		break;
+	}
+	case  Effect_Simple_Lighting:
+	{
+		EffectSimpleLighting* EF = new EffectSimpleLighting;
+		E = EF;
 		break;
 	}
 	default:
