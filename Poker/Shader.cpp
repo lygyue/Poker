@@ -189,7 +189,19 @@ static char* DefaultPixelShaderSrcSimpleHelix =
 "	return TexCol;"
 "}";
 
+// 想实现那个颜料流动的，融合的渐变效果，实在是没有写出来。以后再考虑考虑
 static char* DefaultPixelShaderSrcSimpleLighting =
+"float4 SimpleLighting(float4 LightCol, float3 LightDir, float3 N, float3 V, float4 Ambient, float4 TexCol)"
+"{"
+"	float diffuseAmount = saturate(dot(LightDir, N));"
+"	float3 diffuse = diffuseAmount * LightCol.rgb;"
+"	float3 R = reflect(-LightDir, N);"
+"	float RdotV = dot(R, V);"
+"	float3 Specular = LightCol * pow(max(0.001f, RdotV), 8.0);"
+"	float4 TexColOut = (Ambient + float4(diffuse, 1.0)) * TexCol + float4(Specular, 1.0);"
+"	return TexColOut;"
+"}"
+
 "cbuffer SceneConstantBuffer : register(b0)"
 "{"
 "	float4x4 ProjViewWorld;"
@@ -203,32 +215,42 @@ static char* DefaultPixelShaderSrcSimpleLighting =
 "	float3 LightDirStart = normalize(float3(-1, -1, 1));"
 "	float3 LightDirEnd = normalize(float3(1, -1, 1));"
 "	float4 SceneAmbient = float4(0.5, 0.5, 0.5, 1);"
-"	float4 TexColIn = TextureIn.Sample(Linear, TexCoord); "
-"	float4 TexColOut = TextureOut.Sample(Linear, TexCoord); "
-"	float3 surfaceNormal = normalize(TexColOut.rgb * 2.0 - 1.0);"
-"	float3 surfaceNormal_In = normalize(TexColIn.rgb * 2.0 - 1.0);"
 "	float3 L =  LightDirStart + (LightDirEnd - LightDirStart) * Alpha;"
-//"	float3 L =  LightDirStart;"
-"	float diffuseAmount = saturate(dot(L, surfaceNormal));"
-"	float diffuseAmount_In = saturate(dot(L, surfaceNormal_In));"
-"	float3 diffuse = diffuseAmount * LightCol.rgb * TexColOut.rgb;"
-"	float3 diffuse_In = diffuseAmount_In * LightCol.rgb * TexColIn.rgb;"
 "	float AssumeDepth = -3.0;"
 "	float2 WorldXY = TexCoord * 2.0 - 1.0;"
-//"	LightCol = LightCol * (1 - Alpha);"
-"	float3 R = reflect(-L, surfaceNormal);"
-"	float3 R_In = reflect(-L, surfaceNormal_In);"
 "	float3 ViewDir = -float3(WorldXY, AssumeDepth);"
-"	float RdotV = dot(R, ViewDir);"
-"	float RdotV_In = dot(R_In, ViewDir);"
-"	float3 Specular = LightCol * pow(max(0.001f, RdotV), 8.0);"
-"	float3 Specular_In = LightCol * pow(max(0.001f, RdotV_In), 8.0);"
-"	float4 TexCol = (SceneAmbient + float4(diffuse, 1.0)) * TexColOut + float4(Specular, 1.0);"
-"	float4 TexCol_In = (SceneAmbient + float4(diffuse_In, 1.0)) * TexColIn + float4(Specular_In, 1.0);"
-"	TexCol = TexCol * TexCol_In;"
-"	TexCol = TexColOut * (1.0 - Alpha) + TexCol * Alpha;"
+"	float step = 1.0 / 1080.0;"
+"	float2 UV;"
+"	float4 TexCol1 = float4(0, 0, 0, 1);"
+"	float4 TexCol2 = float4(0, 0, 0, 1);"
+
+"	for (int i = -2; i < 3; i++)"
+"	{"
+"		for (int j = -2; j < 3; j++)"
+"		{"
+"			UV.x = TexCoord.x + j * step;"
+"			UV.y = TexCoord.y + i * step;"
+"			float4 TexColIn = TextureIn.Sample(Linear, UV);"
+"			float4 TexColOut = TextureOut.Sample(Linear, UV); "
+"			float3 N1 = normalize(TexColOut.rgb * 2.0 - 1.0);"
+"			float3 N2 = normalize(TexColIn.rgb * 2.0 - 1.0);"
+"			TexCol1 += SimpleLighting(LightCol, L, N1, ViewDir, SceneAmbient, TexColOut);"
+"			TexCol2 += SimpleLighting(LightCol, L, N2, ViewDir, SceneAmbient, TexColIn);"
+"		}"
+"	}"
+"	TexCol1 = TexCol1 / 5.0;"
+"	TexCol2 = TexCol2 / 5.0;"
+"	float4 TexCol = TexCol1 * TexCol2;"
+"	float4 Col = TextureOut.Sample(Linear, TexCoord);"
+"	TexCol = Col * (1.0 - Alpha) + TexCol * Alpha;"
 "	return TexCol;"
 "}";
+
+void Test()
+{
+
+}
+
 
 std::string StandardShaderName[CutomShader] = { "Simple_Black", "Simple_White", "Simple_Red", "Simple_Green", "Simple_Blue", "Simple_Texture_Sample" ,
 "Simple_Fade","Simple_Fade_In_Out", "Simple_N_B_N", "Simple_L_R_L", "Simple_Elipse_Scale", "Simple_Layer_Alpha", "Simple_Helix", "SimpleLighting" };
