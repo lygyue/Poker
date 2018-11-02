@@ -19,6 +19,7 @@ Mesh::Mesh(std::string Name)
 	mIndexBuffer = nullptr;
 	mIndexFormat = DXGI_FORMAT_R16_UINT;
 	mVertexElementSize = 12;
+	mVisible = true;
 	mPrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 }
 
@@ -43,6 +44,15 @@ void Mesh::SetMaterial(Material* Mat)
 	mMaterial = Mat;
 }
 
+void Mesh::SetVisible(bool Visible)
+{
+	mVisible = Visible;
+}
+
+bool Mesh::GetVisible() const
+{
+	return mVisible;
+}
 
 bool Mesh::Initialise(void* VertexBuffer, int VertexElementSize, int VertexCount, void* IndexBuffer, int IndexCount, D3D11_PRIMITIVE_TOPOLOGY Primitive/* = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST*/)
 {
@@ -67,6 +77,7 @@ bool Mesh::Initialise(void* VertexBuffer, int VertexElementSize, int VertexCount
 
 void Mesh::RenderMesh(Matrix4& WorldTransform) const
 {
+	if (!mVisible) return;
 	XMMATRIX modelMat = XMMATRIX(WorldTransform[0][0], WorldTransform[0][1], WorldTransform[0][2], WorldTransform[0][3],
 		WorldTransform[1][0], WorldTransform[1][1], WorldTransform[1][2], WorldTransform[1][3],
 		WorldTransform[2][0], WorldTransform[2][1], WorldTransform[2][2], WorldTransform[2][3],

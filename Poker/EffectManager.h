@@ -14,9 +14,12 @@
 #include <map>
 #include <xstring>
 #include "Math/SimpleMath.h"
+#include "Math/Vector3.h"
 
 enum Effect_Type
 {
+	Effect_Shutter,
+	Effect_InOutAndBlurBlend,
 	Effect_Simple_Lighting,
 	Effect_GPU_Rotate_Helix,
 	Effect_Layer_Alpha,
@@ -114,6 +117,7 @@ private:
 	EffectFadeIn* mSecondEffect;
 };
 //-----------------------------------------------------------------------
+enum BaseShader;
 class EffectFadeInOutBlend : public Effect
 {
 	friend class EffectManager;
@@ -122,12 +126,17 @@ protected:
 	EffectFadeInOutBlend();
 	virtual ~EffectFadeInOutBlend();
 
+	void SetShaderType(BaseShader BS)
+	{
+		mShaderType = BS;
+	}
+
 	virtual void Initialise() override;
 	virtual void Update() override;
 
+	BaseShader mShaderType;
 };
 //-----------------------------------------------------------------------
-enum BaseShader;
 class EffectN_B_N : public Effect
 {
 	friend class EffectManager;
@@ -181,6 +190,34 @@ private:
 	std::vector<SceneNode*> mAnimationNodeArray;
 	std::vector<SimpleSpline*> mAnimationSplineArray;
 	std::vector<int> mAnimationRandomCircleArray;
+};
+//-----------------------------------------------------------------------
+class EffectShutter : public Effect
+{
+	struct SimpleAnimationStruct
+	{
+		float StartTime;
+		float EndTime;
+		float CurrentTime;
+		Vector3 RotateVector;
+	};
+	friend class EffectManager;
+public:
+protected:
+	EffectShutter();
+	virtual ~EffectShutter();
+
+	void SetTile(int X, int Y);
+	virtual void Initialise() override;
+	virtual void Update() override;
+private:
+	int mTileX;
+	int mTileY;
+	SceneNode* mAnimationRoot;
+	std::vector<Mesh*> mAnimationMeshArray;
+	std::vector<SceneNode*> mAnimationNodeArray;
+	std::vector<Material*> mMaterialArray;
+	std::vector<SimpleAnimationStruct*> mAnimationStructArray;
 };
 //-----------------------------------------------------------------------
 class EffectLayerAlpha : public Effect

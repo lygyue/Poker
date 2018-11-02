@@ -238,22 +238,70 @@ static char* DefaultPixelShaderSrcSimpleLighting =
 "			TexCol2 += SimpleLighting(LightCol, L, N2, ViewDir, SceneAmbient, TexColIn);"
 "		}"
 "	}"
-"	TexCol1 = TexCol1 / 5.0;"
-"	TexCol2 = TexCol2 / 5.0;"
+"	TexCol1 = TexCol1 / 25.0;"
+"	TexCol2 = TexCol2 / 25.0;"
 "	float4 TexCol = TexCol1 * TexCol2;"
 "	float4 Col = TextureOut.Sample(Linear, TexCoord);"
 "	TexCol = Col * (1.0 - Alpha) + TexCol * Alpha;"
 "	return TexCol;"
 "}";
 
-void Test()
-{
-
-}
-
+static char* DefaultPixelShaderSrcSimpleInOutAndBlurBlend =
+"cbuffer SceneConstantBuffer : register(b0)"
+"{"
+"	float4x4 ProjViewWorld;"
+"	float Alpha;"
+"}"
+"Texture2D TextureOut   : register(t0); SamplerState Linear : register(s0); "
+"Texture2D TextureIn   : register(t1); "
+"float4 main(in float4 Position : SV_Position, in float2 TexCoord : TEXCOORD0) : SV_Target"
+"{"
+"	float BlendFactor = 4.99;"
+"	float step = 1.0 / 512.0;"
+"	float AntiAlpha = 1.0 - Alpha;"
+"	int TopBlend = BlendFactor * AntiAlpha;"
+"	int BottomBlend = BlendFactor * Alpha;"
+"	float BlendCount = 0.0;"
+"	float4 TexColIn = float4(0, 0, 0, 1);"
+"	float4 TexColOut = float4(0, 0, 0, 1);"
+"	float2 Coord = TexCoord * 2.0 - 1.0;"
+"	for(int i = -TopBlend; i <= TopBlend; i++)"
+"	{"
+"		for(int j = -TopBlend; j <= TopBlend; j++)"
+"		{"
+"			float2 UV_IN = float2(Coord.x + float(j) * step, Coord.y + float(i) * step);;"
+"			UV_IN = (UV_IN + 1.0) / 2.0;"
+"			TexColIn += TextureIn.Sample(Linear, UV_IN);"
+"			BlendCount++;"
+"		}"
+"	}"
+"	TexColIn /= BlendCount;"
+"	BlendCount = 0;"
+"	for(int i = -BottomBlend; i <= BottomBlend; i++)"
+"	{"
+"		for(int j = -BottomBlend; j <= BottomBlend; j++)"
+"		{"
+"			float2 UV_OUT = float2(Coord.x + float(j) * step, Coord.y + float(i) * step);"
+"			UV_OUT = (UV_OUT + 1.0) / 2.0;"
+"			TexColOut += TextureOut.Sample(Linear, UV_OUT);"
+"			BlendCount++;"
+"		}"
+"	}"
+"	TexColOut /= BlendCount;"
+"	float4 TexCol;"
+"	if(TexCoord.y <= Alpha)"
+"	{"
+"		TexCol = TexColIn;"
+"	}"
+"	else"
+"	{"
+"		TexCol = TexColOut;"
+"	}"
+"	return TexCol;"
+"}";
 
 std::string StandardShaderName[CutomShader] = { "Simple_Black", "Simple_White", "Simple_Red", "Simple_Green", "Simple_Blue", "Simple_Texture_Sample" ,
-"Simple_Fade","Simple_Fade_In_Out", "Simple_N_B_N", "Simple_L_R_L", "Simple_Elipse_Scale", "Simple_Layer_Alpha", "Simple_Helix", "SimpleLighting" };
+"Simple_Fade","Simple_Fade_In_Out", "Simple_N_B_N", "Simple_L_R_L", "Simple_Elipse_Scale", "Simple_Layer_Alpha", "Simple_Helix", "SimpleLighting", "SimpleInOutAndBlurBlend" };
 
 Shader::Shader()
 {
@@ -373,6 +421,7 @@ void ShaderManager::InitialiseStandardShaders()
 	CreateCustomShader(StandardShaderName[SimpleLayerAlpha], DefaultStandardSampleVertexShaderSrc, DefaultPixelShaderSrcSimpleLayerAlpha, ShaderElementFlag);
 	CreateCustomShader(StandardShaderName[SimpleHelix], DefaultStandardSampleVertexShaderSrc, DefaultPixelShaderSrcSimpleHelix, ShaderElementFlag);
 	CreateCustomShader(StandardShaderName[SimpleLighting], DefaultStandardSampleVertexShaderSrc, DefaultPixelShaderSrcSimpleLighting, ShaderElementFlag);
+	CreateCustomShader(StandardShaderName[SimpleInOutAndBlurBlend], DefaultStandardSampleVertexShaderSrc, DefaultPixelShaderSrcSimpleInOutAndBlurBlend, ShaderElementFlag);
 }
 
 Shader* ShaderManager::CreateCustomShader(std::string Name, std::string VSD, std::string PSD, unsigned int ShaderElementFlag)

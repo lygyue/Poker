@@ -31,6 +31,7 @@ enum BaseShader
 	SimpleLayerAlpha,
 	SimpleHelix,
 	SimpleLighting,
+	SimpleInOutAndBlurBlend,
 	CutomShader,
 };
 enum ShaderElement

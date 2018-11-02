@@ -22,6 +22,8 @@ public:
 	Material* GetMaterial() const;
 	void SetMaterial(Material* Mat);
 
+	void SetVisible(bool Visible);
+	bool GetVisible() const;
 protected:
 	Mesh(std::string Name);
 	~Mesh();
@@ -39,6 +41,7 @@ private:
 	UINT mIndexCount;
 	D3D11_PRIMITIVE_TOPOLOGY mPrimitiveType;
 	DXGI_FORMAT mIndexFormat;
+	bool mVisible;
 };
 
 class MeshManager

@@ -21,7 +21,6 @@ SceneNode::SceneNode(std::string Name)
 	mWorldScale = Vector3(1, 1, 1);
 
 	mParentNode = nullptr;
-	mVisible = true;
 }
 
 SceneNode::~SceneNode()
@@ -171,16 +170,6 @@ bool SceneNode::DetachMesh(Mesh* M)
 		}
 	}
 	return false;
-}
-
-void SceneNode::SetVisible(bool Visible)
-{
-	mVisible = Visible;
-}
-
-bool SceneNode::GetVisible() const
-{
-	return mVisible;
 }
 
 void SceneNode::Scale(const Vector3& scale)

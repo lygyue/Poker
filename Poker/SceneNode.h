@@ -44,9 +44,6 @@ public:
 	bool AttachMesh(Mesh* M);
 	bool DetachMesh(Mesh* M);
 
-	void SetVisible(bool Visible);
-	bool GetVisible() const;
-
 	void Scale(const Vector3& scale);
 	void Scale(float x, float y, float z);
 	void Translate(const Vector3& d);
@@ -88,8 +85,6 @@ private:
 	Vector3 mWorldScale;
 
 	RenderGroup mRenderGroup;
-
-	bool mVisible;
 
 	std::vector<SceneNode*> mChildArray;
 	std::vector<Mesh*> mAttachMeshArray;

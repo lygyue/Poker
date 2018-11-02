@@ -238,7 +238,7 @@ void EffectFadeInOut::Update()
 //-----------------------------------------------------------------------
 EffectFadeInOutBlend::EffectFadeInOutBlend()
 {
-
+	mShaderType = SimpleFadeInOut;
 }
 
 EffectFadeInOutBlend::~EffectFadeInOutBlend()
@@ -257,7 +257,7 @@ void EffectFadeInOutBlend::Initialise()
 {
 	mOriginalMaterial = mAttachMesh->GetMaterial();
 	MaterialManager* MatMgr = Scene::GetCurrentScene()->GetMaterialManager();
-	Material* CurrentMaterial = MatMgr->CreateMaterial(SimpleFadeInOut);
+	Material* CurrentMaterial = MatMgr->CreateMaterial(mShaderType);
 	if (!mNextTexturePath.empty())
 	{
 		TextureManager* TexMgr = Scene::GetCurrentScene()->GetTextureManager();
@@ -517,6 +517,136 @@ void Effect_SeparateTile::Update()
 	}
 }
 //-----------------------------------------------------------------------
+EffectShutter::EffectShutter()
+{
+	mTileY = 32;
+	mTileX = mTileY * 16 / 9;
+	mAnimationRoot = nullptr;
+}
+
+EffectShutter::~EffectShutter()
+{
+	if (mAnimationRoot)
+	{
+		Scene::GetCurrentScene()->GetRootSceneNode()->RemoveAndDestroyChild(mAnimationRoot);
+		mAnimationRoot = nullptr;
+	}
+	mAttachMesh->SetVisible(true);
+	Material* Mat = mAnimationMeshArray[0]->GetMaterial();
+	D3d11Texture* Tex = mOriginalMaterial->GetTexture(0);
+	Scene::GetCurrentScene()->GetTextureManager()->DestroyTexture(Tex);
+	mOriginalMaterial->SetTexture(Mat->GetTexture(0));
+	MaterialManager* MatMgr = Scene::GetCurrentScene()->GetMaterialManager();
+	for (size_t i = 0; i < mAnimationMeshArray.size(); i++)
+	{
+		Scene::GetCurrentScene()->GetMeshManager()->DestroyMesh(mAnimationMeshArray[i]);
+	}
+	mAnimationMeshArray.clear();
+	for (size_t i = 0; i < mMaterialArray.size(); i++)
+	{
+		Scene::GetCurrentScene()->GetMaterialManager()->DestroyMaterial(mMaterialArray[i]->GetName());
+	}
+	mMaterialArray.clear();
+	for (size_t i = 0; i < mAnimationStructArray.size(); i++)
+	{
+		SAFE_DELETE(mAnimationStructArray[i]);
+	}
+	mAnimationStructArray.clear();
+	// not need to destroy, will be destroy from root node.
+	mAnimationNodeArray.clear();
+}
+
+void EffectShutter::SetTile(int X, int Y)
+{
+	mTileX = X;
+	mTileY = Y;
+}
+
+void EffectShutter::Initialise()
+{
+	mAttachMesh->SetVisible(false);
+
+	mOriginalMaterial = mAttachMesh->GetMaterial();
+	int Tiles = mTileX * mTileY;
+	// create root node
+	mAnimationRoot = Scene::GetCurrentScene()->GetRootSceneNode()->CreateChild("Effect_Shutter_Animation_Root_Node", Vector3::ZERO, Quaternion::IDENTITY, Vector3(1, 1, 1));
+	// create meshes and scene nodes
+	float xStep = 2.0f / float(mTileX);
+	float yStep = 2.0f / float(mTileY);
+	float uStep = 1.0f / float(mTileX);
+	float vStep = 1.0f / float(mTileY);
+	float NodeDepth = FAR_PLANE - 15.0f;
+	char szName[128];
+	// create the new material
+	MaterialManager* MatMgr = Scene::GetCurrentScene()->GetMaterialManager();
+
+	TextureManager* TexMgr = Scene::GetCurrentScene()->GetTextureManager();
+	RenderSystemD3D11* RS = Scene::GetCurrentScene()->GetRenderSystem();
+	D3d11Texture* Tex = TexMgr->LoadTextureFromFile(mNextTexturePath, RS->GetD3d11Device(), mNextTexturePath.c_str(), false);
+
+	for (int i = 0; i < mTileY; i++)
+	{
+		for (int j = 0; j < mTileX; j++)
+		{
+			memset(szName, 0, sizeof(szName));
+			sprintf_s(szName, 128, "%s_%d_%d", "Effect_SeparateTile_Animation_Root_Node_Child", j, i);
+			SceneNode* Node = mAnimationRoot->CreateChild(szName, Vector3(0, 0, NodeDepth), Quaternion::IDENTITY, Vector3(1, 1, 1));
+			mAnimationNodeArray.push_back(Node);
+			float xCenter = (xStep / 2.0f) + j * xStep - 1.0f;
+			float yCenter = (yStep / 2.0f) + i * yStep - 1.0f;
+
+			Vector3 Pos[4];
+			Vector2 UV[4];
+			Pos[0] = Vector3(-xStep / 2.0f, yStep / 2.0f, 0);
+			Pos[1] = Vector3(xStep / 2.0f, yStep / 2.0f, 0);
+			Pos[2] = Vector3(xStep / 2.0f, -yStep / 2.0f, 0);
+			Pos[3] = Vector3(-xStep / 2.0f, -yStep / 2.0f, 0);
+			UV[0] = Vector2(uStep * j, 1.0f - vStep * (i + 1));
+			UV[1] = Vector2(uStep * (j + 1), 1.0f - vStep * (i + 1));
+			UV[2] = Vector2(uStep * (j + 1), 1.0f - vStep * i);
+			UV[3] = Vector2(uStep * j, 1.0f - vStep * i);
+			Mesh* M = Scene::GetCurrentScene()->GetMeshManager()->CreateQuad(szName, Pos, UV);
+			Material* CurrentMaterial = MatMgr->CreateMaterial(SimpleFadeInOut);
+			M->SetMaterial(CurrentMaterial);
+			mMaterialArray.push_back(CurrentMaterial);
+			Node->AttachMesh(M);
+			mAnimationMeshArray.push_back(M);
+			SimpleAnimationStruct* SAS = new SimpleAnimationStruct;
+			SAS->StartTime = RangeRandom(0, mTotalTime / 2.0f);
+			SAS->EndTime = RangeRandom(mTotalTime / 2.0f, mTotalTime);
+			SAS->CurrentTime = 0.0f;
+			SAS->RotateVector = Vector3(RangeRandom(-1.0f, 1.0f), RangeRandom(-1.0f, 1.0f), 0).normalisedCopy();
+			mAnimationStructArray.push_back(SAS);
+		}
+	}
+}
+
+void EffectShutter::Update()
+{
+	for (size_t i = 0; i < mAnimationStructArray.size(); i++)
+	{
+		SimpleAnimationStruct* SAS = mAnimationStructArray[i];
+		SceneNode* N = mAnimationNodeArray[i];
+		Material* Mat = mMaterialArray[i];
+		float Alpha = 0.0f;
+		SAS->CurrentTime += (Timer::GetInstance()->GetDelta()) * 0.001f;
+		if (SAS->CurrentTime > SAS->StartTime)
+		{
+			Alpha = (SAS->CurrentTime - SAS->StartTime) / (SAS->EndTime - SAS->StartTime);
+			if (Alpha > 1) Alpha = 1.0f;
+
+			Radian R = Radian(Alpha * 2 * PI);
+			Quaternion q;
+			q.FromAngleAxis(R, SAS->RotateVector);
+			N->SetRotation(q);
+		}
+		char* TempPtr = Mat->GetConstBufferPointer();
+		memcpy(TempPtr, &Alpha, sizeof(float));
+		Mat->SetConstBufferLen(sizeof(float));
+	}
+}
+
+//-----------------------------------------------------------------------
 EffectLayerAlpha::EffectLayerAlpha()
 {
 	mCurrentMaterial = nullptr;
@@ -741,6 +871,18 @@ Effect* EffectManager::CreateEffect(std::string Name, Effect_Type ET, float Tota
 	{
 		EffectSimpleLighting* EF = new EffectSimpleLighting;
 		E = EF;
+		break;
+	}
+	case Effect_InOutAndBlurBlend:
+	{
+		EffectFadeInOutBlend* EF = new EffectFadeInOutBlend;
+		EF->SetShaderType(SimpleInOutAndBlurBlend);
+		E = EF;
+		break;
+	}
+	case Effect_Shutter:
+	{
+		E = new EffectShutter;
 		break;
 	}
 	default:
