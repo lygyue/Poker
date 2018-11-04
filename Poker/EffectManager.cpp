@@ -535,7 +535,7 @@ EffectShutter::~EffectShutter()
 	Material* Mat = mAnimationMeshArray[0]->GetMaterial();
 	D3d11Texture* Tex = mOriginalMaterial->GetTexture(0);
 	Scene::GetCurrentScene()->GetTextureManager()->DestroyTexture(Tex);
-	mOriginalMaterial->SetTexture(Mat->GetTexture(0));
+	mOriginalMaterial->SetTexture(Mat->GetTexture(1));
 	MaterialManager* MatMgr = Scene::GetCurrentScene()->GetMaterialManager();
 	for (size_t i = 0; i < mAnimationMeshArray.size(); i++)
 	{
@@ -589,11 +589,11 @@ void EffectShutter::Initialise()
 		for (int j = 0; j < mTileX; j++)
 		{
 			memset(szName, 0, sizeof(szName));
-			sprintf_s(szName, 128, "%s_%d_%d", "Effect_SeparateTile_Animation_Root_Node_Child", j, i);
-			SceneNode* Node = mAnimationRoot->CreateChild(szName, Vector3(0, 0, NodeDepth), Quaternion::IDENTITY, Vector3(1, 1, 1));
-			mAnimationNodeArray.push_back(Node);
+			sprintf_s(szName, 128, "%s_%d_%d", "Effect_Shutter_Animation_Root_Node_Child", j, i);
 			float xCenter = (xStep / 2.0f) + j * xStep - 1.0f;
 			float yCenter = (yStep / 2.0f) + i * yStep - 1.0f;
+			SceneNode* Node = mAnimationRoot->CreateChild(szName, Vector3(xCenter, yCenter, NodeDepth), Quaternion::IDENTITY, Vector3(1, 1, 1));
+			mAnimationNodeArray.push_back(Node);
 
 			Vector3 Pos[4];
 			Vector2 UV[4];
@@ -607,13 +607,16 @@ void EffectShutter::Initialise()
 			UV[3] = Vector2(uStep * j, 1.0f - vStep * i);
 			Mesh* M = Scene::GetCurrentScene()->GetMeshManager()->CreateQuad(szName, Pos, UV);
 			Material* CurrentMaterial = MatMgr->CreateMaterial(SimpleFadeInOut);
+			CurrentMaterial->SetTexture(mOriginalMaterial->GetTexture(0));
+			CurrentMaterial->SetTexture(Tex, 1);
 			M->SetMaterial(CurrentMaterial);
 			mMaterialArray.push_back(CurrentMaterial);
 			Node->AttachMesh(M);
 			mAnimationMeshArray.push_back(M);
 			SimpleAnimationStruct* SAS = new SimpleAnimationStruct;
-			SAS->StartTime = RangeRandom(0, mTotalTime / 2.0f);
-			SAS->EndTime = RangeRandom(mTotalTime / 2.0f, mTotalTime);
+			SAS->StartTime = RangeRandom(0, mTotalTime *0.25f);
+			SAS->EndTime = RangeRandom(mTotalTime * 0.75f, mTotalTime);
+			SAS->Circles = (int)RangeRandom(1, 4.999);
 			SAS->CurrentTime = 0.0f;
 			SAS->RotateVector = Vector3(RangeRandom(-1.0f, 1.0f), RangeRandom(-1.0f, 1.0f), 0).normalisedCopy();
 			mAnimationStructArray.push_back(SAS);
@@ -635,7 +638,7 @@ void EffectShutter::Update()
 			Alpha = (SAS->CurrentTime - SAS->StartTime) / (SAS->EndTime - SAS->StartTime);
 			if (Alpha > 1) Alpha = 1.0f;
 
-			Radian R = Radian(Alpha * 2 * PI);
+			Radian R = Radian(Alpha * 2 * SAS->Circles * PI);
 			Quaternion q;
 			q.FromAngleAxis(R, SAS->RotateVector);
 			N->SetRotation(q);

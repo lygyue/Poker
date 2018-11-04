@@ -304,7 +304,7 @@ void SceneNode::_NotifyModify(SceneNode* Parent)
 	{
 		mWorldScale = mParentNode->GetWorldScale() * mScale;
 		mWorldRotation = mParentNode->GetWorldRotation() * mRotation;
-		mWorldPosition = mWorldRotation * mPosition + mParentNode->GetWorldPosition();
+		mWorldPosition = mParentNode->GetWorldRotation() * mPosition + mParentNode->GetWorldPosition();
 	}
 	_UpdateAllChild();
 }

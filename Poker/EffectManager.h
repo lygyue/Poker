@@ -199,6 +199,7 @@ class EffectShutter : public Effect
 		float StartTime;
 		float EndTime;
 		float CurrentTime;
+		int Circles;
 		Vector3 RotateVector;
 	};
 	friend class EffectManager;
