@@ -32,6 +32,7 @@ enum BaseShader
 	SimpleHelix,
 	SimpleLighting,
 	SimpleInOutAndBlurBlend,
+	SimplePerlinNoise,
 	CutomShader,
 };
 enum ShaderElement

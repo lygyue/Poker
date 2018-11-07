@@ -16,6 +16,7 @@
 #include "Timer.h"
 #include "Math/Vector2.h"
 #include "Functional.h"
+#include "Math/PerlinNoise.h"
 
 Effect::Effect()
 {
@@ -519,7 +520,7 @@ void Effect_SeparateTile::Update()
 //-----------------------------------------------------------------------
 EffectShutter::EffectShutter()
 {
-	mTileY = 32;
+	mTileY = 64;
 	mTileX = mTileY * 16 / 9;
 	mAnimationRoot = nullptr;
 }
@@ -614,7 +615,7 @@ void EffectShutter::Initialise()
 			Node->AttachMesh(M);
 			mAnimationMeshArray.push_back(M);
 			SimpleAnimationStruct* SAS = new SimpleAnimationStruct;
-			SAS->StartTime = RangeRandom(0, mTotalTime *0.25f);
+			SAS->StartTime = RangeRandom(0, mTotalTime * 0.25f);
 			SAS->EndTime = RangeRandom(mTotalTime * 0.75f, mTotalTime);
 			SAS->Circles = (int)RangeRandom(1, 4.999);
 			SAS->CurrentTime = 0.0f;
@@ -785,6 +786,107 @@ void EffectSimpleLighting::Update()
 }
 
 //-----------------------------------------------------------------------
+EffectPerlinNoiseInOut::EffectPerlinNoiseInOut()
+{
+	mSwitchTexture = false;
+}
+
+EffectPerlinNoiseInOut::~EffectPerlinNoiseInOut()
+{
+	Material* Mat = mAttachMesh->GetMaterial();
+	MaterialManager* MatMgr = Scene::GetCurrentScene()->GetMaterialManager();
+	// destroy old texture
+	TextureManager* TexMgr = Scene::GetCurrentScene()->GetTextureManager();
+	TexMgr->DestroyTexture(Mat->GetTexture(1));
+	TexMgr->DestroyTexture(Mat->GetTexture(2));
+	TexMgr->DestroyTexture(Mat->GetTexture(3));
+	MatMgr->DestroyMaterial(Mat->GetName());
+	mAttachMesh->SetMaterial(mOriginalMaterial);
+}
+
+void BuildPerlinTexture(unsigned char* Data, int Width, int Height, unsigned int seed)
+{
+	double frequency;
+	frequency = 8.0;
+
+	int octaves;
+	octaves = 8;
+
+	const PerlinNoise perlin(seed);
+	const double fx = double(Width) / frequency;
+	const double fy = double(Height) / frequency;
+
+	for (int y = 0; y < Height; ++y)
+	{
+		for (int x = 0; x < Width; ++x)
+		{
+			double Value = perlin.octaveNoise0_1(x / fx, y / fy, octaves);
+			int pos = x + y * Width;
+			unsigned char r = Value >= 1.0 ? 255 : Value <= 0.0 ? 0 : static_cast<std::uint8_t>(Value * 255.0 + 0.5);
+			Data[pos] = r;
+		}
+	}
+}
+
+void EffectPerlinNoiseInOut::Initialise()
+{
+	mOriginalMaterial = mAttachMesh->GetMaterial();
+	MaterialManager* MatMgr = Scene::GetCurrentScene()->GetMaterialManager();
+	Material* CurrentMaterial = MatMgr->CreateMaterial(SimplePerlinNoise);
+
+	TextureManager* TexMgr = Scene::GetCurrentScene()->GetTextureManager();
+	RenderSystemD3D11* RS = Scene::GetCurrentScene()->GetRenderSystem();
+	D3d11Texture* Tex = TexMgr->LoadTextureFromFile(mNextTexturePath, RS->GetD3d11Device(), mNextTexturePath.c_str(), false);
+	D3d11Texture* OldTex = mOriginalMaterial->GetTexture(0);
+	CurrentMaterial->SetTexture(OldTex, 0);
+	mOriginalMaterial->SetTexture(Tex);
+	mAttachMesh->SetMaterial(CurrentMaterial);
+	// Create three noise textures
+	int NoiseWidth = 512;
+	int NoiseHeight = 512;
+	unsigned char* TextureData = new unsigned char[NoiseHeight * NoiseWidth];
+	D3d11Texture* NoiseTex1 = TexMgr->CreateTexture("PerlinNoiseTexture1", RS->GetD3d11Device(), NoiseWidth, NoiseHeight, DXGI_FORMAT_R8_UNORM, 1, true);
+	CurrentMaterial->SetTexture(NoiseTex1, 1);
+	D3d11Texture* NoiseTex2 = TexMgr->CreateTexture("PerlinNoiseTexture2", RS->GetD3d11Device(), NoiseWidth, NoiseHeight, DXGI_FORMAT_R8_UNORM, 1, true);
+	CurrentMaterial->SetTexture(NoiseTex2, 2);
+	D3d11Texture* NoiseTex3 = TexMgr->CreateTexture("PerlinNoiseTexture3", RS->GetD3d11Device(), NoiseWidth, NoiseHeight, DXGI_FORMAT_R8_UNORM, 1, true);
+	CurrentMaterial->SetTexture(NoiseTex3, 3);
+	// fill the texture data with perlin noise
+	BuildPerlinTexture(TextureData, NoiseWidth, NoiseHeight, 12345);
+	NoiseTex1->BlitToTexture(TextureData, NoiseWidth * NoiseHeight);
+	BuildPerlinTexture(TextureData, NoiseWidth, NoiseHeight, 23456);
+	NoiseTex2->BlitToTexture(TextureData, NoiseWidth * NoiseHeight);
+	BuildPerlinTexture(TextureData, NoiseWidth, NoiseHeight, 34567);
+	NoiseTex3->BlitToTexture(TextureData, NoiseWidth * NoiseHeight);
+
+	SAFE_DELETE_ARRAY(TextureData);
+}
+
+void EffectPerlinNoiseInOut::Update()
+{
+	float Alpha = CalculateCurrentAlpha();
+	if (Alpha > 0.5f)
+	{
+		Alpha -= 0.5f;
+		Alpha *= 2;
+		Alpha = 1.0f - Alpha;
+		if (!mSwitchTexture)
+		{
+			mSwitchTexture = true;
+			TextureManager* TexMgr = Scene::GetCurrentScene()->GetTextureManager();
+			Material* Mat = mAttachMesh->GetMaterial();
+			TexMgr->DestroyTexture(Mat->GetTexture(0));
+			Mat->SetTexture(mOriginalMaterial->GetTexture(0), 0);
+		}
+	}
+	else
+	{
+		Alpha *= 2;
+	}
+	SetAlphaToConstBuffer(Alpha);
+}
+
+//-----------------------------------------------------------------------
 EffectManager::EffectManager()
 {
 
@@ -886,6 +988,11 @@ Effect* EffectManager::CreateEffect(std::string Name, Effect_Type ET, float Tota
 	case Effect_Shutter:
 	{
 		E = new EffectShutter;
+		break;
+	}
+	case Effect_PerlinNoiseInOut:
+	{
+		E = new EffectPerlinNoiseInOut;
 		break;
 	}
 	default:

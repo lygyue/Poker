@@ -95,6 +95,11 @@ void PokerLogicManager::Update()
 			Acceleration = -4.0f;
 			EffectTimeLen = 9.0f;
 		}
+		else if (CurrentIndex == Effect_PerlinNoiseInOut)
+		{
+			Acceleration = 1.0f;
+			EffectTimeLen = 9.99f;
+		}
 		else
 		{
 			EffectTimeLen = 6.0f;

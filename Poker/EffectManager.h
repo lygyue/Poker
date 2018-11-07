@@ -18,6 +18,7 @@
 
 enum Effect_Type
 {
+	Effect_PerlinNoiseInOut,
 	Effect_Shutter,
 	Effect_InOutAndBlurBlend,
 	Effect_Simple_Lighting,
@@ -80,7 +81,6 @@ class EffectFadeIn : public Effect
 {
 	friend class EffectManager;
 	friend class EffectFadeInOut;
-public:
 protected:
 	EffectFadeIn();
 	virtual ~EffectFadeIn();
@@ -93,7 +93,6 @@ class EffectFadeOut : public EffectFadeIn
 {
 	friend class EffectManager;
 	friend class EffectFadeInOut;
-public:
 protected:
 	EffectFadeOut();
 	virtual ~EffectFadeOut();
@@ -104,7 +103,6 @@ protected:
 class EffectFadeInOut : public Effect
 {
 	friend class EffectManager;
-public:
 protected:
 	EffectFadeInOut();
 	virtual ~EffectFadeInOut();
@@ -121,7 +119,6 @@ enum BaseShader;
 class EffectFadeInOutBlend : public Effect
 {
 	friend class EffectManager;
-public:
 protected:
 	EffectFadeInOutBlend();
 	virtual ~EffectFadeInOutBlend();
@@ -140,7 +137,6 @@ protected:
 class EffectN_B_N : public Effect
 {
 	friend class EffectManager;
-public:
 protected:
 	EffectN_B_N();
 	virtual ~EffectN_B_N();
@@ -160,20 +156,18 @@ protected:
 class Effect_RotateOutIn : public EffectN_B_N
 {
 	friend class EffectManager;
-public:
 protected:
 	Effect_RotateOutIn();
 	virtual ~Effect_RotateOutIn();
 
 	virtual void Update() override;
-private:
+
 };
 //-----------------------------------------------------------------------
 class SimpleSpline;
 class Effect_SeparateTile : public Effect
 {
 	friend class EffectManager;
-public:
 protected:
 	Effect_SeparateTile();
 	virtual ~Effect_SeparateTile();
@@ -203,7 +197,6 @@ class EffectShutter : public Effect
 		Vector3 RotateVector;
 	};
 	friend class EffectManager;
-public:
 protected:
 	EffectShutter();
 	virtual ~EffectShutter();
@@ -224,7 +217,6 @@ private:
 class EffectLayerAlpha : public Effect
 {
 	friend class EffectManager;
-public:
 protected:
 	EffectLayerAlpha();
 	virtual ~EffectLayerAlpha();
@@ -243,7 +235,6 @@ private:
 class EffectSimpleLighting : public Effect
 {
 	friend class EffectManager;
-public:
 protected:
 	EffectSimpleLighting();
 	virtual ~EffectSimpleLighting();
@@ -251,6 +242,19 @@ protected:
 	virtual void Initialise() override;
 	virtual void Update() override;
 private:
+	bool mSwitchTexture;
+};
+//-----------------------------------------------------------------------
+
+class EffectPerlinNoiseInOut : public Effect
+{
+	friend class EffectManager;
+protected:
+	EffectPerlinNoiseInOut();
+	virtual ~EffectPerlinNoiseInOut();
+	virtual void Initialise() override;
+	virtual void Update() override;
+
 	bool mSwitchTexture;
 };
 //-----------------------------------------------------------------------
