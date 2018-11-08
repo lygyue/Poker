@@ -18,6 +18,8 @@
 
 enum Effect_Type
 {
+	Effect_FogSimulation,
+	Effect_UScroll,
 	Effect_PerlinNoiseInOut,
 	Effect_Shutter,
 	Effect_InOutAndBlurBlend,
@@ -256,6 +258,17 @@ protected:
 	virtual void Update() override;
 
 	bool mSwitchTexture;
+};
+//-----------------------------------------------------------------------
+class EffectFogSimulation : public Effect
+{
+	friend class EffectManager;
+protected:
+	EffectFogSimulation();
+	virtual ~EffectFogSimulation();
+
+	virtual void Initialise() override;
+	virtual void Update() override;
 };
 //-----------------------------------------------------------------------
 class EffectManager

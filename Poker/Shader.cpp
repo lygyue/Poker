@@ -325,9 +325,53 @@ static char* DefaultPixelShaderSrcSimplePerlineNoiseFadeInOut =
 "	return TexCol;"
 "}";
 
+static char* DefaultPixelShaderSrcSimpleUScroll =
+"cbuffer SceneConstantBuffer : register(b0)"
+"{"
+"	float4x4 ProjViewWorld;"
+"	float Alpha;"
+"}"
+"Texture2D TextureOut   : register(t0); SamplerState Linear : register(s0); "
+"Texture2D TextureIn   : register(t1); "
+"float4 main(in float4 Position : SV_Position, in float2 TexCoord : TEXCOORD0) : SV_Target"
+"{"
+"	float u = TexCoord.x - Alpha;"
+"	float4 TexCol;"
+"	if(u < 0)"
+"	{"
+"		float2 UV_IN = float2(u + 1.0, TexCoord.y);"
+"		TexCol = TextureIn.Sample(Linear, UV_IN);"
+"	}"
+"	else"
+"	{"
+"		float2 UV_OUT = float2(u, TexCoord.y);"
+"		TexCol = TextureOut.Sample(Linear, UV_OUT);"
+"	}"
+"	return TexCol;"
+"}";
+
+static char* DefaultPixelShaderSrcSimpleFogSimulation =
+"cbuffer SceneConstantBuffer : register(b0)"
+"{"
+"	float4x4 ProjViewWorld;"
+"	float Alpha;"
+"}"
+"Texture2D TextureOut   : register(t0); SamplerState Linear : register(s0); "
+"Texture2D TextureNoise   : register(t1); "
+"float4 main(in float4 Position : SV_Position, in float2 TexCoord : TEXCOORD0) : SV_Target"
+"{"
+"	float4 TexCol = TextureOut.Sample(Linear, TexCoord);"
+"	float u = (TexCoord.x + Alpha) / 2.0;"
+"	float r = TextureNoise.Sample(Linear, float2(u, TexCoord.y / 2.0)).r;"
+"	float4 NoiseCol = float4(r, r, r, 1);"
+"	NoiseCol = NoiseCol * TexCoord.y * TexCoord.y;"
+"	TexCol = TexCol + (1 - TexCol) * NoiseCol;"
+"	return TexCol;"
+"}";
+
 std::string StandardShaderName[CutomShader] = { "Simple_Black", "Simple_White", "Simple_Red", "Simple_Green", "Simple_Blue", "Simple_Texture_Sample" ,
 "Simple_Fade","Simple_Fade_In_Out", "Simple_N_B_N", "Simple_L_R_L", "Simple_Elipse_Scale", "Simple_Layer_Alpha", "Simple_Helix", "SimpleLighting", "SimpleInOutAndBlurBlend",
-"Simple_PerlinNoise"};
+"Simple_PerlinNoise", "Simple_UScroll", "Simple_FogSimulation"};
 
 Shader::Shader()
 {
@@ -449,6 +493,8 @@ void ShaderManager::InitialiseStandardShaders()
 	CreateCustomShader(StandardShaderName[SimpleLighting], DefaultStandardSampleVertexShaderSrc, DefaultPixelShaderSrcSimpleLighting, ShaderElementFlag);
 	CreateCustomShader(StandardShaderName[SimpleInOutAndBlurBlend], DefaultStandardSampleVertexShaderSrc, DefaultPixelShaderSrcSimpleInOutAndBlurBlend, ShaderElementFlag);
 	CreateCustomShader(StandardShaderName[SimplePerlinNoise], DefaultStandardSampleVertexShaderSrc, DefaultPixelShaderSrcSimplePerlineNoiseFadeInOut, ShaderElementFlag);
+	CreateCustomShader(StandardShaderName[SimpleUScroll], DefaultStandardSampleVertexShaderSrc, DefaultPixelShaderSrcSimpleUScroll, ShaderElementFlag);
+	CreateCustomShader(StandardShaderName[SimpleFogSimulation], DefaultStandardSampleVertexShaderSrc, DefaultPixelShaderSrcSimpleFogSimulation, ShaderElementFlag);
 }
 
 Shader* ShaderManager::CreateCustomShader(std::string Name, std::string VSD, std::string PSD, unsigned int ShaderElementFlag)

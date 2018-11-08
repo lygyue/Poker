@@ -33,6 +33,8 @@ enum BaseShader
 	SimpleLighting,
 	SimpleInOutAndBlurBlend,
 	SimplePerlinNoise,
+	SimpleUScroll,
+	SimpleFogSimulation,
 	CutomShader,
 };
 enum ShaderElement

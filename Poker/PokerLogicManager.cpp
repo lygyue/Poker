@@ -100,6 +100,11 @@ void PokerLogicManager::Update()
 			Acceleration = 1.0f;
 			EffectTimeLen = 9.99f;
 		}
+		else if(SimpleUScroll == CurrentIndex)
+		{
+			Acceleration = 1.0f;
+			EffectTimeLen = 3.0f;
+		}
 		else
 		{
 			EffectTimeLen = 6.0f;

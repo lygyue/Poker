@@ -885,6 +885,56 @@ void EffectPerlinNoiseInOut::Update()
 	}
 	SetAlphaToConstBuffer(Alpha);
 }
+//-----------------------------------------------------------------------
+EffectFogSimulation::EffectFogSimulation()
+{
+
+}
+
+EffectFogSimulation::~EffectFogSimulation()
+{
+	Material* Mat = mAttachMesh->GetMaterial();
+	MaterialManager* MatMgr = Scene::GetCurrentScene()->GetMaterialManager();
+	// destroy old texture
+	TextureManager* TexMgr = Scene::GetCurrentScene()->GetTextureManager();
+	TexMgr->DestroyTexture(Mat->GetTexture(1));
+	MatMgr->DestroyMaterial(Mat->GetName());
+	mAttachMesh->SetMaterial(mOriginalMaterial);
+}
+
+void EffectFogSimulation::Initialise()
+{
+	mOriginalMaterial = mAttachMesh->GetMaterial();
+	MaterialManager* MatMgr = Scene::GetCurrentScene()->GetMaterialManager();
+	Material* CurrentMaterial = MatMgr->CreateMaterial(SimpleFogSimulation);
+
+	TextureManager* TexMgr = Scene::GetCurrentScene()->GetTextureManager();
+	RenderSystemD3D11* RS = Scene::GetCurrentScene()->GetRenderSystem();
+	D3d11Texture* Tex = TexMgr->LoadTextureFromFile(mNextTexturePath, RS->GetD3d11Device(), mNextTexturePath.c_str(), false);
+	D3d11Texture* OldTex = mOriginalMaterial->GetTexture(0);
+	TexMgr->DestroyTexture(OldTex);
+	CurrentMaterial->SetTexture(Tex, 0);
+	mOriginalMaterial->SetTexture(Tex);
+	mAttachMesh->SetMaterial(CurrentMaterial);
+	// Create three noise textures
+	int NoiseWidth = 512;
+	int NoiseHeight = 512;
+	unsigned char* TextureData = new unsigned char[NoiseHeight * NoiseWidth];
+	D3d11Texture* NoiseTex1 = TexMgr->CreateTexture("PerlinNoiseTexture1", RS->GetD3d11Device(), NoiseWidth, NoiseHeight, DXGI_FORMAT_R8_UNORM, 1, true);
+	CurrentMaterial->SetTexture(NoiseTex1, 1);
+	// fill the texture data with perlin noise
+	BuildPerlinTexture(TextureData, NoiseWidth, NoiseHeight, 12345);
+	NoiseTex1->BlitToTexture(TextureData, NoiseWidth * NoiseHeight);
+
+	SAFE_DELETE_ARRAY(TextureData);
+}
+
+void EffectFogSimulation::Update()
+{
+	float Alpha = CalculateCurrentAlpha();
+	SetAlphaToConstBuffer(Alpha);
+	return;
+}
 
 //-----------------------------------------------------------------------
 EffectManager::EffectManager()
@@ -993,6 +1043,18 @@ Effect* EffectManager::CreateEffect(std::string Name, Effect_Type ET, float Tota
 	case Effect_PerlinNoiseInOut:
 	{
 		E = new EffectPerlinNoiseInOut;
+		break;
+	}
+	case Effect_UScroll:
+	{
+		EffectFadeInOutBlend* EF = new EffectFadeInOutBlend;
+		EF->SetShaderType(SimpleUScroll);
+		E = EF;
+		break;
+	}
+	case Effect_FogSimulation:
+	{
+		E = new EffectFogSimulation;
 		break;
 	}
 	default:

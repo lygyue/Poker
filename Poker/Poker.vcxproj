@@ -157,6 +157,7 @@
     <ClInclude Include="Material.h" />
     <ClInclude Include="Math\Matrix3.h" />
     <ClInclude Include="Math\Matrix4.h" />
+    <ClInclude Include="Math\PerlinNoise.h" />
     <ClInclude Include="Math\Quaternion.h" />
     <ClInclude Include="Math\SimpleMath.h" />
     <ClInclude Include="Math\Vector2.h" />
